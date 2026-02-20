@@ -20,7 +20,7 @@ public struct GuildAdsBanner: View {
     }
 
     public var body: some View {
-        Group {
+        VStack {
             if let ad = viewModel.ad {
                 Button {
                     let destinationURL = ad.destinationURL
@@ -59,33 +59,60 @@ public struct GuildAdsBanner: View {
         HStack(spacing: 12) {
             iconView(for: ad)
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(ad.title)
-                    .font(.headline)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white)
                     .lineLimit(1)
 
                 Text(ad.subtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-
-                Text(ad.sponsoredLabel)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .textCase(.uppercase)
+                    .foregroundStyle(.white.opacity(0.8))
+                    .lineLimit(2)
             }
 
-            Spacer(minLength: 8)
+            Spacer(minLength: 2)
 
-            Image(systemName: "arrow.up.right")
+            Text("Get")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.black)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color.white)
+                .clipShape(Capsule())
         }
         .padding(12)
+        .padding(.trailing, 20)
+        .frame(maxWidth: 360)
+        .frame(height: 50)
         .background(
             RoundedRectangle(cornerRadius: 14)
-                .fill(Color.secondary.opacity(0.12))
+                .fill(Color.white.opacity(0.12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                )
         )
+        .contentShape(Rectangle())
+        .overlay(alignment: .trailing) {
+            Rectangle()
+                .fill(.white.opacity(0.5))
+                .frame(maxWidth: 20, maxHeight: .infinity)
+                .overlay {
+                    VStack(spacing: 0) {
+                        Text("AD")
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                        Image("guild", bundle: .module)
+                            .resizable()
+                            .frame(width: 16, height: 16)
+                    }
+                    .foregroundStyle(.black)
+                    .opacity(0.7)
+                    .scaleEffect(0.5)
+                }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
     @ViewBuilder
@@ -95,17 +122,17 @@ public struct GuildAdsBanner: View {
             case .success(let image):
                 image
                     .resizable()
-                    .scaledToFill()
+                    .scaledToFit()
+                    .frame(width: 34, height: 34)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
             default:
                 Image(systemName: "app.fill")
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.secondary.opacity(0.15))
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 34, height: 34)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
             }
         }
-        .frame(width: 48, height: 48)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 }
 
@@ -114,22 +141,45 @@ private final class GuildAdsBannerViewModel: ObservableObject {
     @Published var ad: GuildAd?
 
     func load(placementID: String, theme: GuildAdsTheme) async {
+        #if DEBUG
+        print("[GuildAds] Banner load for placement '\(placementID)'")
+        #endif
+
         if ad?.placementID != placementID {
             ad = await GuildAds.cachedAd(for: placementID)
+            #if DEBUG
+            print("[GuildAds] Cached ad for '\(placementID)': \(ad?.title ?? "nil")")
+            #endif
         }
 
         if ad == nil {
+            #if DEBUG
+            print("[GuildAds] No cached ad, refreshing...")
+            #endif
             ad = await GuildAds.refreshAd(for: placementID, theme: theme)
+            #if DEBUG
+            print("[GuildAds] Refreshed ad for '\(placementID)': \(ad?.title ?? "nil")")
+            #endif
         }
     }
 
     func onAppear(placementID: String, theme: GuildAdsTheme) async {
+        #if DEBUG
+        print("[GuildAds] Banner onAppear for placement '\(placementID)'")
+        #endif
+
         await load(placementID: placementID, theme: theme)
 
         guard let ad else {
+            #if DEBUG
+            print("[GuildAds] No ad to display for '\(placementID)'")
+            #endif
             return
         }
 
+        #if DEBUG
+        print("[GuildAds] Reporting impression for '\(placementID)'")
+        #endif
         self.ad = await GuildAds.reportBannerAppearance(ad: ad, placementID: placementID, theme: theme)
     }
 

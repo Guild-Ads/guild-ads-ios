@@ -62,7 +62,17 @@ actor GuildAdsAPI {
     func sendLaunch(_ payload: LaunchRequestPayload) async throws -> [String: GuildAd] {
         let response = try await post(path: configuration.endpoints.launch, body: payload)
 
+        #if DEBUG
+        print("[GuildAds] Launch response status: \(response.statusCode), bytes: \(response.data.count)")
+        if let jsonString = String(data: response.data, encoding: .utf8) {
+            print("[GuildAds] Launch response body: \(jsonString.prefix(500))")
+        }
+        #endif
+
         guard !response.data.isEmpty else {
+            #if DEBUG
+            print("[GuildAds] Launch response empty")
+            #endif
             return [:]
         }
 
@@ -70,37 +80,77 @@ actor GuildAdsAPI {
         do {
             launch = try decoder.decode(LaunchResponsePayload.self, from: response.data)
         } catch {
+            #if DEBUG
+            print("[GuildAds] Failed to decode launch response: \(error)")
+            #endif
             return [:]
         }
 
         guard let payloadAds = launch.ads else {
+            #if DEBUG
+            print("[GuildAds] Launch response has no ads field")
+            #endif
             return [:]
         }
+
+        #if DEBUG
+        print("[GuildAds] Launch decoded \(payloadAds.count) ads for placements: \(payloadAds.keys.joined(separator: ", "))")
+        #endif
 
         return payloadAds.reduce(into: [String: GuildAd]()) { result, pair in
             let (placementID, payload) = pair
             if let ad = payload.toGuildAd(defaultPlacementID: placementID) {
                 result[placementID] = ad
+                #if DEBUG
+                print("[GuildAds] Cached ad for placement '\(placementID)': \(ad.title)")
+                #endif
             }
         }
     }
 
     func fetchAd(_ payload: ServeRequestPayload) async throws -> GuildAd? {
+        #if DEBUG
+        print("[GuildAds] Fetching ad for placement '\(payload.placementID)'")
+        #endif
+
         let response = try await post(path: configuration.endpoints.serve, body: payload)
 
+        #if DEBUG
+        print("[GuildAds] Serve response status: \(response.statusCode), bytes: \(response.data.count)")
+        #endif
+
         guard response.statusCode != 204, !response.data.isEmpty else {
+            #if DEBUG
+            print("[GuildAds] Serve returned no content")
+            #endif
             return nil
         }
 
+        #if DEBUG
+        if let jsonString = String(data: response.data, encoding: .utf8) {
+            print("[GuildAds] Serve response body: \(jsonString.prefix(500))")
+        }
+        #endif
+
         if let direct = try? decoder.decode(ServeResponsePayload.self, from: response.data) {
-            return direct.toGuildAd(defaultPlacementID: payload.placementID)
+            let ad = direct.toGuildAd(defaultPlacementID: payload.placementID)
+            #if DEBUG
+            print("[GuildAds] Serve decoded ad: \(ad?.title ?? "nil")")
+            #endif
+            return ad
         }
 
         if let wrapped = try? decoder.decode(ServeEnvelopeResponsePayload.self, from: response.data),
            let ad = wrapped.ad?.toGuildAd(defaultPlacementID: payload.placementID) {
+            #if DEBUG
+            print("[GuildAds] Serve decoded wrapped ad: \(ad.title)")
+            #endif
             return ad
         }
 
+        #if DEBUG
+        print("[GuildAds] Serve failed to decode response")
+        #endif
         return nil
     }
 
