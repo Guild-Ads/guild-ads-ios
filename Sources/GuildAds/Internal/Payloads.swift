@@ -149,14 +149,12 @@ struct ServeResponsePayload: Codable, Sendable {
         let body: String?
         let cta: String?
         let imageURL: URL?
-        let sponsoredLabel: String?
 
         enum CodingKeys: String, CodingKey {
             case headline
             case body
             case cta
             case imageURL = "image_url"
-            case sponsoredLabel = "sponsored_label"
         }
     }
 
@@ -181,7 +179,6 @@ struct ServeResponsePayload: Codable, Sendable {
     let subtitle: String?
     let iconURL: URL?
     let destinationURL: URL?
-    let sponsoredLabel: String?
     let expiry: Date?
     let nonce: String?
     let creative: CreativePayload?
@@ -195,7 +192,6 @@ struct ServeResponsePayload: Codable, Sendable {
         case subtitle
         case iconURL = "icon_url"
         case destinationURL = "destination_url"
-        case sponsoredLabel = "sponsored_label"
         case expiry
         case nonce
         case creative
@@ -213,10 +209,9 @@ struct ServeResponsePayload: Codable, Sendable {
             return nil
         }
 
-        let resolvedTitle = title ?? creative?.headline ?? "Sponsored"
-        let resolvedSubtitle = subtitle ?? creative?.body ?? "Discover this app"
+        let resolvedTitle = title ?? creative?.headline ?? ""
+        let resolvedSubtitle = subtitle ?? creative?.body ?? ""
         let resolvedIcon = iconURL ?? creative?.imageURL
-        let resolvedSponsoredLabel = sponsoredLabel ?? creative?.sponsoredLabel ?? "Sponsored"
 
         return GuildAd(
             id: adID,
@@ -225,7 +220,6 @@ struct ServeResponsePayload: Codable, Sendable {
             subtitle: resolvedSubtitle,
             iconURL: resolvedIcon,
             destinationURL: resolvedDestination,
-            sponsoredLabel: resolvedSponsoredLabel,
             nonce: nonce,
             expiry: expiry,
             clickURL: reporting?.clickURL

@@ -64,7 +64,7 @@ public struct GuildAdsBanner: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(ad.sponsoredLabel), \(ad.title). \(ad.subtitle)")
+                .accessibilityLabel("\(ad.title). \(ad.subtitle).")
             }
         }
         .task(id: placementID) {
