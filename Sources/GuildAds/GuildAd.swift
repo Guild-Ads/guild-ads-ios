@@ -14,6 +14,21 @@ public struct GuildAd: Codable, Sendable, Equatable, Identifiable {
     public var tapURL: URL {
         clickURL ?? destinationURL
     }
+    public var isTapURLLikelyValid: Bool {
+        guard let scheme = tapURL.scheme?.lowercased() else {
+            return false
+        }
+
+        guard scheme == "http" || scheme == "https" else {
+            return false
+        }
+
+        guard let host = tapURL.host, !host.isEmpty else {
+            return false
+        }
+
+        return true
+    }
 
     public init(
         id: String,

@@ -79,6 +79,29 @@ import Testing
     #expect(object["destination_url"] == nil)
 }
 
+@Test func tapURLValidationAcceptsHttpsAndRejectsUnsafeSchemes() throws {
+    let httpsAd = GuildAd(
+        id: "ad_https",
+        placementID: "settings_footer",
+        title: "HTTPS Ad",
+        subtitle: "Valid URL",
+        iconURL: nil,
+        destinationURL: URL(string: "https://guild-ads.onrender.com/r/ad_https")!
+    )
+    #expect(httpsAd.isTapURLLikelyValid)
+
+    let fileAd = GuildAd(
+        id: "ad_file",
+        placementID: "settings_footer",
+        title: "File Ad",
+        subtitle: "Invalid URL",
+        iconURL: nil,
+        destinationURL: URL(string: "https://guild-ads.onrender.com/r/ad_file")!,
+        clickURL: URL(string: "file:///tmp/bad")
+    )
+    #expect(!fileAd.isTapURLLikelyValid)
+}
+
 @Test func queueStorePersistsCalls() async throws {
     let directory = FileManager.default.temporaryDirectory
         .appendingPathComponent(UUID().uuidString, isDirectory: true)

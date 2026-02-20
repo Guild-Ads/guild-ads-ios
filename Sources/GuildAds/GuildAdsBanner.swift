@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 public enum GuildAdsBannerTheme: Sendable {
     case automatic
@@ -23,7 +26,38 @@ public struct GuildAdsBanner: View {
         VStack {
             if let ad = viewModel.ad {
                 Button {
-                    openURL(ad.tapURL)
+                    let tapURL = ad.tapURL
+
+                    #if DEBUG
+                    print("[GuildAds] Banner tap for placement '\(placementID)', ad '\(ad.id)'")
+                    print("[GuildAds] tapURL=\(tapURL.absoluteString)")
+                    print("[GuildAds] destinationURL=\(ad.destinationURL.absoluteString)")
+                    print("[GuildAds] clickURL=\(ad.clickURL?.absoluteString ?? "nil")")
+                    #endif
+
+                    guard ad.isTapURLLikelyValid else {
+                        #if DEBUG
+                        print("[GuildAds] Blocked tap: URL failed validation: \(tapURL.absoluteString)")
+                        #endif
+                        return
+                    }
+
+                    #if canImport(UIKit)
+                    guard UIApplication.shared.canOpenURL(tapURL) else {
+                        #if DEBUG
+                        print("[GuildAds] Blocked tap: canOpenURL returned false for \(tapURL.absoluteString)")
+                        #endif
+                        return
+                    }
+                    #endif
+
+                    openURL(tapURL) { accepted in
+                        #if DEBUG
+                        if !accepted {
+                            print("[GuildAds] openURL rejected tap URL: \(tapURL.absoluteString)")
+                        }
+                        #endif
+                    }
                     viewModel.handleTap(placementID: placementID)
                 } label: {
                     bannerCard(for: ad)
