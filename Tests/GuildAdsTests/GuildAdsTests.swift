@@ -15,10 +15,10 @@ import Testing
       },
       "destination": {
         "type": "url",
-        "value": "https://example.com/?ref=network"
+        "value": "https://guild-ads.onrender.com/r/ad_789?p=settings_footer&n=signed"
       },
       "reporting": {
-        "click_url": "https://guild-ads.onrender.com/r/ad_789"
+        "impression_url": "https://guild-ads.onrender.com/v1/impression"
       },
       "expiry": "2026-02-10T18:00:00Z",
       "nonce": "signed_nonce_here"
@@ -34,7 +34,49 @@ import Testing
     #expect(ad?.id == "ad_789")
     #expect(ad?.placementID == "settings_footer")
     #expect(ad?.title == "Upgrade your journaling")
-    #expect(ad?.destinationURL.absoluteString == "https://example.com/?ref=network")
+    #expect(ad?.destinationURL.absoluteString == "https://guild-ads.onrender.com/r/ad_789?p=settings_footer&n=signed")
+    #expect(ad?.tapURL.absoluteString == "https://guild-ads.onrender.com/r/ad_789?p=settings_footer&n=signed")
+}
+
+@Test func servePayloadPrefersDestinationValueForTapAction() throws {
+    let json = """
+    {
+      "ad_id": "ad_123",
+      "placement_id": "settings_footer",
+      "title": "Guild",
+      "destination_url": "https://advertiser.example.com/landing",
+      "destination": {
+        "type": "url",
+        "value": "https://guild-ads.onrender.com/r/ad_123?p=settings_footer&n=signed"
+      }
+    }
+    """
+
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+
+    let payload = try decoder.decode(ServeResponsePayload.self, from: Data(json.utf8))
+    let ad = payload.toGuildAd(defaultPlacementID: "settings_footer")
+
+    #expect(ad?.destinationURL.absoluteString == "https://guild-ads.onrender.com/r/ad_123?p=settings_footer&n=signed")
+    #expect(ad?.tapURL.absoluteString == "https://guild-ads.onrender.com/r/ad_123?p=settings_footer&n=signed")
+}
+
+@Test func clickPayloadOmitsDestinationURL() throws {
+    let payload = ClickRequestPayload(
+        adID: "ad_123",
+        placementID: "settings_footer",
+        appToken: "token",
+        appID: "com.example.app",
+        timestamp: 1_739_212_345,
+        userID: "idfv"
+    )
+
+    let encoded = try JSONEncoder().encode(payload)
+    let object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+
+    #expect(object["ad_id"] as? String == "ad_123")
+    #expect(object["destination_url"] == nil)
 }
 
 @Test func queueStorePersistsCalls() async throws {

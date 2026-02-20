@@ -23,8 +23,7 @@ public struct GuildAdsBanner: View {
         VStack {
             if let ad = viewModel.ad {
                 Button {
-                    let destinationURL = ad.destinationURL
-                    openURL(destinationURL)
+                    openURL(ad.tapURL)
                     viewModel.handleTap(placementID: placementID)
                 } label: {
                     bannerCard(for: ad)

@@ -11,6 +11,9 @@ public struct GuildAd: Codable, Sendable, Equatable, Identifiable {
     public let nonce: String?
     public let expiry: Date?
     public let clickURL: URL?
+    public var tapURL: URL {
+        clickURL ?? destinationURL
+    }
 
     public init(
         id: String,

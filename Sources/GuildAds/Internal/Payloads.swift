@@ -86,7 +86,6 @@ struct ClickRequestPayload: Codable, Sendable {
     let placementID: String
     let appToken: String
     let appID: String
-    let destinationURL: URL
     let timestamp: Int64
     let userID: String?
 
@@ -95,7 +94,6 @@ struct ClickRequestPayload: Codable, Sendable {
         case placementID = "placement_id"
         case appToken = "app_token"
         case appID = "app_id"
-        case destinationURL = "destination_url"
         case timestamp = "ts"
         case userID = "user_id"
     }
@@ -210,7 +208,7 @@ struct ServeResponsePayload: Codable, Sendable {
             return nil
         }
 
-        let resolvedDestination = destinationURL ?? destination?.value
+        let resolvedDestination = destination?.value ?? destinationURL ?? reporting?.clickURL
         guard let resolvedDestination else {
             return nil
         }
@@ -337,7 +335,6 @@ struct RuntimeContext: Sendable {
             placementID: placementID,
             appToken: token,
             appID: bundleID,
-            destinationURL: ad.destinationURL,
             timestamp: nowTimestamp,
             userID: userID
         )
