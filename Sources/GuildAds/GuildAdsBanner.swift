@@ -15,6 +15,17 @@ private enum GuildAdsBannerLayout {
     static let adRailWidth: CGFloat = 20
 }
 
+private struct GuildAdsBannerPalette {
+    let textColor: Color
+    let subtitleColor: Color
+    let cardFillColor: Color
+    let cardStrokeColor: Color
+    let ctaForegroundColor: Color
+    let ctaBackgroundColor: Color
+    let railFillColor: Color
+    let railForegroundColor: Color
+}
+
 public struct GuildAdsBanner: View {
     private let placementID: String
     private let theme: GuildAdsBannerTheme
@@ -100,6 +111,37 @@ public struct GuildAdsBanner: View {
         }
     }
 
+    private var palette: GuildAdsBannerPalette {
+        switch resolvedTheme {
+        case .dark:
+            let text = Color.white
+            let background = Color.black
+            return GuildAdsBannerPalette(
+                textColor: text,
+                subtitleColor: text.opacity(0.82),
+                cardFillColor: background.opacity(0.24),
+                cardStrokeColor: text.opacity(0.14),
+                ctaForegroundColor: background,
+                ctaBackgroundColor: text,
+                railFillColor: text.opacity(0.38),
+                railForegroundColor: background.opacity(0.88)
+            )
+        case .light, .automatic:
+            let text = Color.black
+            let background = Color.white
+            return GuildAdsBannerPalette(
+                textColor: text,
+                subtitleColor: text.opacity(0.75),
+                cardFillColor: background.opacity(0.34),
+                cardStrokeColor: text.opacity(0.18),
+                ctaForegroundColor: background,
+                ctaBackgroundColor: text,
+                railFillColor: text.opacity(0.26),
+                railForegroundColor: background.opacity(0.94)
+            )
+        }
+    }
+
     private func bannerCard(for ad: GuildAd) -> some View {
         HStack(spacing: 12) {
             iconView(for: ad)
@@ -110,10 +152,10 @@ public struct GuildAdsBanner: View {
 
             Text("Get")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(.black)
+                .foregroundStyle(palette.ctaForegroundColor)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(Color.white)
+                .background(palette.ctaBackgroundColor)
                 .clipShape(Capsule())
         }
         .padding(12)
@@ -122,10 +164,10 @@ public struct GuildAdsBanner: View {
         .frame(minHeight: GuildAdsBannerLayout.height, maxHeight: GuildAdsBannerLayout.height)
         .background(
             RoundedRectangle(cornerRadius: 14)
-                .fill(Color.black.opacity(0.18))
+                .fill(palette.cardFillColor)
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        .stroke(palette.cardStrokeColor, lineWidth: 1)
                 )
         )
         .contentShape(Rectangle())
@@ -140,14 +182,14 @@ public struct GuildAdsBanner: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(ad.title)
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(palette.textColor)
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .minimumScaleFactor(0.85)
 
             Text(ad.subtitle)
                 .font(.caption)
-                .foregroundStyle(.white.opacity(0.8))
+                .foregroundStyle(palette.subtitleColor)
                 .lineLimit(2)
                 .truncationMode(.tail)
                 .minimumScaleFactor(0.85)
@@ -156,7 +198,7 @@ public struct GuildAdsBanner: View {
 
     private var adRailView: some View {
         Rectangle()
-            .fill(.white.opacity(0.5))
+            .fill(palette.railFillColor)
             .frame(width: GuildAdsBannerLayout.adRailWidth)
             .frame(maxHeight: .infinity)
             .overlay {
@@ -168,7 +210,7 @@ public struct GuildAdsBanner: View {
                         .resizable()
                         .frame(width: 16, height: 16)
                 }
-                .foregroundStyle(.black)
+                .foregroundStyle(palette.railForegroundColor)
                 .opacity(0.7)
                 .scaleEffect(0.5)
             }
@@ -189,7 +231,7 @@ public struct GuildAdsBanner: View {
                     .resizable()
                     .symbolRenderingMode(.monochrome)
                     .scaledToFit()
-                    .foregroundStyle(.white)
+                    .foregroundStyle(palette.textColor)
                     .frame(width: 34, height: 34)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
