@@ -47,7 +47,7 @@ struct ContentView: View {
 
 ## Default API base URL
 
-`https://guild-ads.onrender.com`
+`https://guildads.com`
 
 ## Default endpoints used by the SDK
 
@@ -74,10 +74,10 @@ You can override endpoint paths in `GuildAds.configure(..., endpoints: ...)`.
   },
   "destination": {
     "type": "url",
-    "value": "https://guild-ads.onrender.com/r/ad_789?p=settings_footer&n=signed"
+    "value": "https://guildads.com/r/ad_789?p=settings_footer&n=signed"
   },
   "reporting": {
-    "impression_url": "https://guild-ads.onrender.com/v1/impression"
+    "impression_url": "https://guildads.com/v1/impression"
   },
   "expiry": "2026-02-10T18:00:00Z",
   "nonce": "signed_nonce_here"

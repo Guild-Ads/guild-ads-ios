@@ -11,7 +11,7 @@ public enum GuildAds {
 
     public static func configure(
         token: String,
-        baseURL: URL = URL(string: "https://guild-ads.onrender.com")!,
+        baseURL: URL = URL(string: "https://guildads.com")!,
         prefetchPlacements: [String] = [],
         endpoints: GuildAdsEndpoints = .default
     ) {

@@ -31,7 +31,7 @@ public struct GuildAdsConfiguration: Sendable {
 
     public init(
         token: String,
-        baseURL: URL = URL(string: "https://guild-ads.onrender.com")!,
+        baseURL: URL = URL(string: "https://guildads.com")!,
         prefetchPlacements: [String] = [],
         endpoints: GuildAdsEndpoints = .default,
         sdkVersion: String = "0.1.0",

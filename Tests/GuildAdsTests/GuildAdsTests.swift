@@ -15,10 +15,10 @@ import Testing
       },
       "destination": {
         "type": "url",
-        "value": "https://guild-ads.onrender.com/r/ad_789?p=settings_footer&n=signed"
+        "value": "https://guildads.com/r/ad_789?p=settings_footer&n=signed"
       },
       "reporting": {
-        "impression_url": "https://guild-ads.onrender.com/v1/impression"
+        "impression_url": "https://guildads.com/v1/impression"
       },
       "expiry": "2026-02-10T18:00:00Z",
       "nonce": "signed_nonce_here"
@@ -34,8 +34,8 @@ import Testing
     #expect(ad?.id == "ad_789")
     #expect(ad?.placementID == "settings_footer")
     #expect(ad?.title == "Upgrade your journaling")
-    #expect(ad?.destinationURL.absoluteString == "https://guild-ads.onrender.com/r/ad_789?p=settings_footer&n=signed")
-    #expect(ad?.tapURL.absoluteString == "https://guild-ads.onrender.com/r/ad_789?p=settings_footer&n=signed")
+    #expect(ad?.destinationURL.absoluteString == "https://guildads.com/r/ad_789?p=settings_footer&n=signed")
+    #expect(ad?.tapURL.absoluteString == "https://guildads.com/r/ad_789?p=settings_footer&n=signed")
 }
 
 @Test func servePayloadPrefersDestinationValueForTapAction() throws {
@@ -47,7 +47,7 @@ import Testing
       "destination_url": "https://advertiser.example.com/landing",
       "destination": {
         "type": "url",
-        "value": "https://guild-ads.onrender.com/r/ad_123?p=settings_footer&n=signed"
+        "value": "https://guildads.com/r/ad_123?p=settings_footer&n=signed"
       }
     }
     """
@@ -58,8 +58,8 @@ import Testing
     let payload = try decoder.decode(ServeResponsePayload.self, from: Data(json.utf8))
     let ad = payload.toGuildAd(defaultPlacementID: "settings_footer")
 
-    #expect(ad?.destinationURL.absoluteString == "https://guild-ads.onrender.com/r/ad_123?p=settings_footer&n=signed")
-    #expect(ad?.tapURL.absoluteString == "https://guild-ads.onrender.com/r/ad_123?p=settings_footer&n=signed")
+    #expect(ad?.destinationURL.absoluteString == "https://guildads.com/r/ad_123?p=settings_footer&n=signed")
+    #expect(ad?.tapURL.absoluteString == "https://guildads.com/r/ad_123?p=settings_footer&n=signed")
 }
 
 @Test func clickPayloadOmitsDestinationURL() throws {
@@ -86,7 +86,7 @@ import Testing
         title: "HTTPS Ad",
         subtitle: "Valid URL",
         iconURL: nil,
-        destinationURL: URL(string: "https://guild-ads.onrender.com/r/ad_https")!
+        destinationURL: URL(string: "https://guildads.com/r/ad_https")!
     )
     #expect(httpsAd.isTapURLLikelyValid)
 
@@ -96,7 +96,7 @@ import Testing
         title: "File Ad",
         subtitle: "Invalid URL",
         iconURL: nil,
-        destinationURL: URL(string: "https://guild-ads.onrender.com/r/ad_file")!,
+        destinationURL: URL(string: "https://guildads.com/r/ad_file")!,
         clickURL: URL(string: "file:///tmp/bad")
     )
     #expect(!fileAd.isTapURLLikelyValid)
