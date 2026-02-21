@@ -9,6 +9,12 @@ public enum GuildAdsBannerTheme: Sendable {
     case dark
 }
 
+private enum GuildAdsBannerLayout {
+    static let maxWidth: CGFloat = 360
+    static let height: CGFloat = 50
+    static let adRailWidth: CGFloat = 20
+}
+
 public struct GuildAdsBanner: View {
     private let placementID: String
     private let theme: GuildAdsBannerTheme
@@ -65,6 +71,12 @@ public struct GuildAdsBanner: View {
                 .buttonStyle(.plain)
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("\(ad.title). \(ad.subtitle).")
+                .dynamicTypeSize(.small ... .xLarge)
+                .textCase(nil)
+                .multilineTextAlignment(.leading)
+                .transaction { transaction in
+                    transaction.animation = nil
+                }
             }
         }
         .task(id: placementID) {
@@ -92,17 +104,7 @@ public struct GuildAdsBanner: View {
         HStack(spacing: 12) {
             iconView(for: ad)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(ad.title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-
-                Text(ad.subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.8))
-                    .lineLimit(2)
-            }
+            adTextView(for: ad)
 
             Spacer(minLength: 2)
 
@@ -116,8 +118,8 @@ public struct GuildAdsBanner: View {
         }
         .padding(12)
         .padding(.trailing, 20)
-        .frame(maxWidth: 360)
-        .frame(height: 50)
+        .frame(maxWidth: GuildAdsBannerLayout.maxWidth)
+        .frame(minHeight: GuildAdsBannerLayout.height, maxHeight: GuildAdsBannerLayout.height)
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .fill(Color.white.opacity(0.12))
@@ -127,25 +129,49 @@ public struct GuildAdsBanner: View {
                 )
         )
         .contentShape(Rectangle())
+        .clipped()
         .overlay(alignment: .trailing) {
-            Rectangle()
-                .fill(.white.opacity(0.5))
-                .frame(maxWidth: 20, maxHeight: .infinity)
-                .overlay {
-                    VStack(spacing: 0) {
-                        Text("AD")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                        Image("guild", bundle: .module)
-                            .resizable()
-                            .frame(width: 16, height: 16)
-                    }
-                    .foregroundStyle(.black)
-                    .opacity(0.7)
-                    .scaleEffect(0.5)
-                }
+            adRailView
         }
         .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    private func adTextView(for ad: GuildAd) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(ad.title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .minimumScaleFactor(0.85)
+
+            Text(ad.subtitle)
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.8))
+                .lineLimit(2)
+                .truncationMode(.tail)
+                .minimumScaleFactor(0.85)
+        }
+    }
+
+    private var adRailView: some View {
+        Rectangle()
+            .fill(.white.opacity(0.5))
+            .frame(width: GuildAdsBannerLayout.adRailWidth)
+            .frame(maxHeight: .infinity)
+            .overlay {
+                VStack(spacing: 0) {
+                    Text("AD")
+                        .font(.caption2)
+                        .fontWeight(.bold)
+                    Image("guild", bundle: .module)
+                        .resizable()
+                        .frame(width: 16, height: 16)
+                }
+                .foregroundStyle(.black)
+                .opacity(0.7)
+                .scaleEffect(0.5)
+            }
     }
 
     @ViewBuilder
@@ -161,7 +187,9 @@ public struct GuildAdsBanner: View {
             default:
                 Image(systemName: "app.fill")
                     .resizable()
+                    .symbolRenderingMode(.monochrome)
                     .scaledToFit()
+                    .foregroundStyle(.white)
                     .frame(width: 34, height: 34)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
