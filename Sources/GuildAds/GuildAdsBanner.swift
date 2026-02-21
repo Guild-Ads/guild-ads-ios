@@ -122,10 +122,10 @@ public struct GuildAdsBanner: View {
         .frame(minHeight: GuildAdsBannerLayout.height, maxHeight: GuildAdsBannerLayout.height)
         .background(
             RoundedRectangle(cornerRadius: 14)
-                .fill(Color.white.opacity(0.12))
+                .fill(Color.black.opacity(0.18))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
                 )
         )
         .contentShape(Rectangle())
