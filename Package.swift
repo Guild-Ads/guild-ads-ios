@@ -16,10 +16,7 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "GuildAds",
-            resources: [
-                .process("Internal/GuildAdsAssets.xcassets"),
-            ]
+            name: "GuildAds"
         ),
         .testTarget(
             name: "GuildAdsTests",

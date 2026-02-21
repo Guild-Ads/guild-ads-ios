@@ -2,6 +2,9 @@ import SwiftUI
 #if canImport(UIKit)
 import UIKit
 #endif
+#if canImport(AppKit)
+import AppKit
+#endif
 
 public enum GuildAdsBannerTheme: Sendable {
     case automatic
@@ -13,6 +16,10 @@ private enum GuildAdsBannerLayout {
     static let maxWidth: CGFloat = 360
     static let height: CGFloat = 50
     static let adRailWidth: CGFloat = 20
+}
+
+private enum GuildAdsBannerAssets {
+    static let markURL = URL(string: "https://guildads.com/banner-icon.png")!
 }
 
 private struct GuildAdsBannerPalette {
@@ -206,8 +213,7 @@ public struct GuildAdsBanner: View {
                     Text("AD")
                         .font(.caption2)
                         .fontWeight(.bold)
-                    Image("guild", bundle: .module)
-                        .resizable()
+                    GuildAdsBannerMarkView(foreground: palette.railForegroundColor)
                         .frame(width: 16, height: 16)
                 }
                 .foregroundStyle(palette.railForegroundColor)
@@ -236,6 +242,169 @@ public struct GuildAdsBanner: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
         }
+    }
+}
+
+#if canImport(UIKit)
+private typealias GuildAdsBannerPlatformImage = UIImage
+#elseif canImport(AppKit)
+private typealias GuildAdsBannerPlatformImage = NSImage
+#endif
+
+private struct GuildAdsBannerMarkView: View {
+    let foreground: Color
+
+    @StateObject private var loader = GuildAdsBannerMarkLoader()
+
+    var body: some View {
+        ZStack {
+            if let image = loader.image {
+                image
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundStyle(foreground)
+            } else {
+                Color.clear
+            }
+        }
+        .task {
+            await loader.loadIfNeeded()
+        }
+    }
+}
+
+@MainActor
+private final class GuildAdsBannerMarkLoader: ObservableObject {
+    @Published var image: Image?
+
+    func loadIfNeeded() async {
+        guard image == nil else {
+            return
+        }
+
+        guard let platformImage = await GuildAdsBannerMarkCache.shared.image() else {
+            return
+        }
+
+        #if canImport(UIKit)
+        image = Image(uiImage: platformImage)
+        #elseif canImport(AppKit)
+        image = Image(nsImage: platformImage)
+        #endif
+    }
+}
+
+private actor GuildAdsBannerMarkCache {
+    static let shared = GuildAdsBannerMarkCache()
+
+    private var cachedImage: GuildAdsBannerPlatformImage?
+    private let request: URLRequest
+    private let session: URLSession
+    private let fileURL: URL?
+
+    init() {
+        let config = URLSessionConfiguration.default
+        config.requestCachePolicy = .returnCacheDataElseLoad
+        config.urlCache = URLCache(
+            memoryCapacity: 8 * 1024 * 1024,
+            diskCapacity: 64 * 1024 * 1024,
+            diskPath: "com.guildads.banner-icon-cache"
+        )
+        config.timeoutIntervalForRequest = 15
+        config.timeoutIntervalForResource = 30
+
+        session = URLSession(configuration: config)
+        request = URLRequest(
+            url: GuildAdsBannerAssets.markURL,
+            cachePolicy: .returnCacheDataElseLoad,
+            timeoutInterval: 15
+        )
+        fileURL = Self.makeCacheFileURL()
+    }
+
+    func image() async -> GuildAdsBannerPlatformImage? {
+        if let cachedImage {
+            return cachedImage
+        }
+
+        if let diskImage = loadDiskImage() {
+            cachedImage = diskImage
+            return diskImage
+        }
+
+        if let cachedResponse = session.configuration.urlCache?.cachedResponse(for: request),
+           let cacheImage = Self.decodeImage(from: cachedResponse.data) {
+            cachedImage = cacheImage
+            persistToDisk(cachedResponse.data)
+            return cacheImage
+        }
+
+        do {
+            let (data, response) = try await session.data(for: request)
+
+            if let httpResponse = response as? HTTPURLResponse,
+               !(200...299).contains(httpResponse.statusCode) {
+                return nil
+            }
+
+            guard let networkImage = Self.decodeImage(from: data) else {
+                return nil
+            }
+
+            session.configuration.urlCache?.storeCachedResponse(
+                CachedURLResponse(response: response, data: data),
+                for: request
+            )
+            persistToDisk(data)
+            cachedImage = networkImage
+            return networkImage
+        } catch {
+            return nil
+        }
+    }
+
+    private func loadDiskImage() -> GuildAdsBannerPlatformImage? {
+        guard let fileURL else {
+            return nil
+        }
+
+        guard let data = try? Data(contentsOf: fileURL) else {
+            return nil
+        }
+
+        return Self.decodeImage(from: data)
+    }
+
+    private func persistToDisk(_ data: Data) {
+        guard let fileURL else {
+            return
+        }
+
+        let directoryURL = fileURL.deletingLastPathComponent()
+        try? FileManager.default.createDirectory(
+            at: directoryURL,
+            withIntermediateDirectories: true,
+            attributes: nil
+        )
+        try? data.write(to: fileURL, options: .atomic)
+    }
+
+    private static func makeCacheFileURL() -> URL? {
+        let baseURL = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
+
+        return baseURL
+            .appendingPathComponent("com.guildads.sdk", isDirectory: true)
+            .appendingPathComponent("banner-icon.png")
+    }
+
+    private static func decodeImage(from data: Data) -> GuildAdsBannerPlatformImage? {
+        #if canImport(UIKit)
+        return UIImage(data: data)
+        #elseif canImport(AppKit)
+        return NSImage(data: data)
+        #endif
     }
 }
 
