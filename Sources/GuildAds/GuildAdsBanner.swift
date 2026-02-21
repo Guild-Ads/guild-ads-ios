@@ -20,6 +20,7 @@ private enum GuildAdsBannerLayout {
 
 private enum GuildAdsBannerAssets {
     static let markURL = URL(string: "https://guildads.com/banner-icon.png")!
+    static let learnURL = URL(string: "https://guildads.com")!
 }
 
 private struct GuildAdsBannerPalette {
@@ -50,43 +51,22 @@ public struct GuildAdsBanner: View {
         VStack {
             if let ad = viewModel.ad {
                 Button {
-                    let tapURL = ad.tapURL
-
-                    #if DEBUG
-                    print("[GuildAds] Banner tap for placement '\(placementID)', ad '\(ad.id)'")
-                    print("[GuildAds] tapURL=\(tapURL.absoluteString)")
-                    print("[GuildAds] destinationURL=\(ad.destinationURL.absoluteString)")
-                    print("[GuildAds] clickURL=\(ad.clickURL?.absoluteString ?? "nil")")
-                    #endif
-
-                    guard ad.isTapURLLikelyValid else {
-                        #if DEBUG
-                        print("[GuildAds] Blocked tap: URL failed validation: \(tapURL.absoluteString)")
-                        #endif
-                        return
-                    }
-
-                    #if canImport(UIKit)
-                    guard UIApplication.shared.canOpenURL(tapURL) else {
-                        #if DEBUG
-                        print("[GuildAds] Blocked tap: canOpenURL returned false for \(tapURL.absoluteString)")
-                        #endif
-                        return
-                    }
-                    #endif
-
-                    openURL(tapURL) { accepted in
-                        #if DEBUG
-                        if !accepted {
-                            print("[GuildAds] openURL rejected tap URL: \(tapURL.absoluteString)")
-                        }
-                        #endif
-                    }
-                    viewModel.handleTap(placementID: placementID)
+                    openAd(ad, source: "tap")
                 } label: {
                     bannerCard(for: ad)
                 }
                 .buttonStyle(.plain)
+                .contextMenu {
+                    Button {
+                        openAd(ad, source: "contextMenu")
+                    } label: {
+                        Label("Get \(ad.title)", systemImage: "arrow.up.forward.square")
+                    }
+
+                    Link(destination: GuildAdsBannerAssets.learnURL) {
+                        Label("Learn about Guild Ads", systemImage: "info.circle")
+                    }
+                }
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("\(ad.title). \(ad.subtitle).")
                 .dynamicTypeSize(.small ... .xLarge)
@@ -105,6 +85,42 @@ public struct GuildAdsBanner: View {
                 await viewModel.onAppear(placementID: placementID, theme: resolvedTheme)
             }
         }
+    }
+
+    private func openAd(_ ad: GuildAd, source: String) {
+        let tapURL = ad.tapURL
+
+        #if DEBUG
+        print("[GuildAds] Banner \(source) for placement '\(placementID)', ad '\(ad.id)'")
+        print("[GuildAds] tapURL=\(tapURL.absoluteString)")
+        print("[GuildAds] destinationURL=\(ad.destinationURL.absoluteString)")
+        print("[GuildAds] clickURL=\(ad.clickURL?.absoluteString ?? "nil")")
+        #endif
+
+        guard ad.isTapURLLikelyValid else {
+            #if DEBUG
+            print("[GuildAds] Blocked \(source): URL failed validation: \(tapURL.absoluteString)")
+            #endif
+            return
+        }
+
+        #if canImport(UIKit)
+        guard UIApplication.shared.canOpenURL(tapURL) else {
+            #if DEBUG
+            print("[GuildAds] Blocked \(source): canOpenURL returned false for \(tapURL.absoluteString)")
+            #endif
+            return
+        }
+        #endif
+
+        openURL(tapURL) { accepted in
+            #if DEBUG
+            if !accepted {
+                print("[GuildAds] openURL rejected \(source) URL: \(tapURL.absoluteString)")
+            }
+            #endif
+        }
+        viewModel.handleTap(placementID: placementID)
     }
 
     private var resolvedTheme: GuildAdsTheme {
