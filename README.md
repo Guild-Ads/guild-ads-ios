@@ -45,6 +45,16 @@ struct ContentView: View {
 }
 ```
 
+## Banner embedding guidance
+
+`GuildAdsBanner` hardens itself against many inherited host styles (for example text case changes, oversized Dynamic Type, and ambient animations), but parent transforms can still affect rendering.
+
+For predictable presentation:
+
+- Avoid wrapping the banner in `scaleEffect`, `rotationEffect`, or parent `opacity` transforms.
+- Prefer giving the banner enough horizontal space (it targets a max width of 360pt and fixed height of 50pt).
+- Avoid clipping/masking the banner container unless you intentionally want to crop it.
+
 ## Default API base URL
 
 `https://guildads.com`
