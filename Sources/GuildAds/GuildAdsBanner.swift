@@ -28,8 +28,6 @@ private struct GuildAdsBannerPalette {
     let subtitleColor: Color
     let cardFillColor: Color
     let cardStrokeColor: Color
-    let ctaForegroundColor: Color
-    let ctaBackgroundColor: Color
     let railFillColor: Color
     let railForegroundColor: Color
 }
@@ -81,8 +79,14 @@ public struct GuildAdsBanner: View {
             await viewModel.load(placementID: placementID, theme: resolvedTheme)
         }
         .onAppear {
+            viewModel.beginAppearance()
             Task {
-                await viewModel.onAppear(placementID: placementID, theme: resolvedTheme)
+                await viewModel.reportImpressionIfNeeded(placementID: placementID, theme: resolvedTheme)
+            }
+        }
+        .onChange(of: viewModel.ad?.id) { _ in
+            Task {
+                await viewModel.reportImpressionIfNeeded(placementID: placementID, theme: resolvedTheme)
             }
         }
     }
@@ -144,8 +148,6 @@ public struct GuildAdsBanner: View {
                 subtitleColor: text.opacity(0.82),
                 cardFillColor: text.opacity(0.18),
                 cardStrokeColor: text.opacity(0.14),
-                ctaForegroundColor: background,
-                ctaBackgroundColor: text,
                 railFillColor: text.opacity(0.38),
                 railForegroundColor: background.opacity(0.88)
             )
@@ -157,8 +159,6 @@ public struct GuildAdsBanner: View {
                 subtitleColor: text.opacity(0.75),
                 cardFillColor: text.opacity(0.12),
                 cardStrokeColor: text.opacity(0.18),
-                ctaForegroundColor: background,
-                ctaBackgroundColor: text,
                 railFillColor: text.opacity(0.26),
                 railForegroundColor: background.opacity(0.94)
             )
@@ -175,11 +175,12 @@ public struct GuildAdsBanner: View {
 
             Text("Get")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(palette.ctaForegroundColor)
+                .foregroundStyle(.black)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(palette.ctaBackgroundColor)
+                .background(Color.white)
                 .clipShape(Capsule())
+                .shadow(color: Color.black.opacity(0.14), radius: 3, x: 0, y: 1)
         }
         .padding(12)
         .padding(.trailing, 20)
@@ -427,6 +428,7 @@ private actor GuildAdsBannerMarkCache {
 @MainActor
 private final class GuildAdsBannerViewModel: ObservableObject {
     @Published var ad: GuildAd?
+    private var impressionReportedAdID: String?
 
     func load(placementID: String, theme: GuildAdsTheme) async {
         #if DEBUG
@@ -451,24 +453,31 @@ private final class GuildAdsBannerViewModel: ObservableObject {
         }
     }
 
-    func onAppear(placementID: String, theme: GuildAdsTheme) async {
-        #if DEBUG
-        print("[GuildAds] Banner onAppear for placement '\(placementID)'")
-        #endif
+    func beginAppearance() {
+        impressionReportedAdID = nil
+    }
 
-        await load(placementID: placementID, theme: theme)
+    func reportImpressionIfNeeded(placementID: String, theme: GuildAdsTheme) async {
+        guard let currentAd = ad else {
+            return
+        }
 
-        guard let ad else {
-            #if DEBUG
-            print("[GuildAds] No ad to display for '\(placementID)'")
-            #endif
+        guard impressionReportedAdID != currentAd.id else {
             return
         }
 
         #if DEBUG
+        print("[GuildAds] Banner appearance side effect for placement '\(placementID)'")
+        #endif
+
+        impressionReportedAdID = currentAd.id
+
+        #if DEBUG
         print("[GuildAds] Reporting impression for '\(placementID)'")
         #endif
-        self.ad = await GuildAds.reportBannerAppearance(ad: ad, placementID: placementID, theme: theme)
+        let updatedAd = await GuildAds.reportBannerAppearance(ad: currentAd, placementID: placementID, theme: theme)
+        self.ad = updatedAd
+        impressionReportedAdID = updatedAd?.id ?? currentAd.id
     }
 
     func handleTap(placementID: String) {
