@@ -146,7 +146,7 @@ public struct GuildAdsBanner: View {
             return GuildAdsBannerPalette(
                 textColor: text,
                 subtitleColor: text.opacity(0.82),
-                cardFillColor: text.opacity(0.18),
+                cardFillColor: text.opacity(0.09),
                 cardStrokeColor: text.opacity(0.14),
                 railFillColor: text.opacity(0.38),
                 railForegroundColor: background.opacity(0.88)
@@ -157,7 +157,7 @@ public struct GuildAdsBanner: View {
             return GuildAdsBannerPalette(
                 textColor: text,
                 subtitleColor: text.opacity(0.75),
-                cardFillColor: text.opacity(0.12),
+                cardFillColor: text.opacity(0.06),
                 cardStrokeColor: text.opacity(0.18),
                 railFillColor: text.opacity(0.26),
                 railForegroundColor: background.opacity(0.94)
