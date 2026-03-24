@@ -55,6 +55,36 @@ For predictable presentation:
 - Prefer giving the banner enough horizontal space (it targets a max width of 360pt and fixed height of 50pt).
 - Avoid clipping/masking the banner container unless you intentionally want to crop it.
 
+## Customization
+
+### Theme
+
+Match the banner to your app's background with the `theme` parameter:
+
+```swift
+GuildAdsBanner(placementID: "settings_footer", theme: .automatic) // follows system (default)
+GuildAdsBanner(placementID: "settings_footer", theme: .light)     // light backgrounds
+GuildAdsBanner(placementID: "settings_footer", theme: .dark)      // dark backgrounds
+```
+
+### Banner configuration
+
+Use `GuildAdsBannerConfiguration` to adjust visual details:
+
+```swift
+let config = GuildAdsBannerConfiguration(
+    cornerRadius: 8,
+    showCallToAction: false
+)
+
+GuildAdsBanner(
+    placementID: "settings_footer",
+    configuration: config
+)
+```
+
+Available options: `cornerRadius`, `maxWidth`, `showIcon`, `callToActionText`, `showCallToAction`, `horizontalPadding`.
+
 ## Default API base URL
 
 `https://guildads.com`
