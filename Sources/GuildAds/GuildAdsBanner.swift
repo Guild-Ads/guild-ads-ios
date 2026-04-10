@@ -6,10 +6,17 @@ import UIKit
 import AppKit
 #endif
 
-public enum GuildAdsBannerTheme: Sendable {
+public enum GuildAdsBannerStyle: Sendable {
+    /// Automatically selects the best available style: glass, then vibrant material, then white.
     case automatic
-    case light
-    case dark
+    /// Glass material background (iOS 26+, macOS 26+).
+    case glass
+    /// Thin vibrant material background.
+    case material
+    /// Solid white card background with dark text.
+    case white
+    /// Solid black card background with light text.
+    case black
 }
 
 private enum GuildAdsBannerLayout {
@@ -30,19 +37,67 @@ private struct GuildAdsBannerPalette {
     let cardStrokeColor: Color
     let railFillColor: Color
     let railForegroundColor: Color
+
+    /// Whether the card background should use a system material instead of `cardFillColor`.
+    let usesGlass: Bool
+    let usesVibrantMaterial: Bool
+
+    static let glass = GuildAdsBannerPalette(
+        textColor: .primary,
+        subtitleColor: .secondary,
+        cardFillColor: .clear,
+        cardStrokeColor: Color.white.opacity(0.25),
+        railFillColor: Color.primary.opacity(0.28),
+        railForegroundColor: Color(white: 0.96),
+        usesGlass: true,
+        usesVibrantMaterial: false
+    )
+
+    static let material = GuildAdsBannerPalette(
+        textColor: .primary,
+        subtitleColor: .secondary,
+        cardFillColor: .clear,
+        cardStrokeColor: Color.primary.opacity(0.12),
+        railFillColor: Color.primary.opacity(0.28),
+        railForegroundColor: Color(white: 0.96),
+        usesGlass: false,
+        usesVibrantMaterial: true
+    )
+
+    static let white = GuildAdsBannerPalette(
+        textColor: .black,
+        subtitleColor: Color.black.opacity(0.6),
+        cardFillColor: .white,
+        cardStrokeColor: Color.black.opacity(0.12),
+        railFillColor: Color.black.opacity(0.28),
+        railForegroundColor: Color.white.opacity(0.94),
+        usesGlass: false,
+        usesVibrantMaterial: false
+    )
+
+    static let black = GuildAdsBannerPalette(
+        textColor: .white,
+        subtitleColor: Color.white.opacity(0.7),
+        cardFillColor: .black,
+        cardStrokeColor: Color.white.opacity(0.16),
+        railFillColor: Color.white.opacity(0.34),
+        railForegroundColor: Color.black.opacity(0.88),
+        usesGlass: false,
+        usesVibrantMaterial: false
+    )
 }
 
 public struct GuildAdsBanner: View {
     private let placementID: String
-    private let theme: GuildAdsBannerTheme
+    private let style: GuildAdsBannerStyle
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.openURL) private var openURL
     @StateObject private var viewModel = GuildAdsBannerViewModel()
 
-    public init(placementID: String, theme: GuildAdsBannerTheme = .automatic) {
+    public init(placementID: String, style: GuildAdsBannerStyle = .automatic) {
         self.placementID = placementID
-        self.theme = theme
+        self.style = style
     }
 
     public var body: some View {
@@ -128,40 +183,43 @@ public struct GuildAdsBanner: View {
     }
 
     private var resolvedTheme: GuildAdsTheme {
-        switch theme {
-        case .light:
-            return .light
-        case .dark:
+        switch resolvedStyle {
+        case .black:
             return .dark
+        case .white:
+            return .light
+        case .glass, .material:
+            return colorScheme == .dark ? .dark : .light
         case .automatic:
             return colorScheme == .dark ? .dark : .light
         }
     }
 
+    private var resolvedStyle: GuildAdsBannerStyle {
+        guard case .automatic = style else { return style }
+
+        if #available(iOS 26, macOS 26, *) {
+            return .glass
+        }
+        #if canImport(UIKit)
+        return .material
+        #else
+        return .white
+        #endif
+    }
+
     private var palette: GuildAdsBannerPalette {
-        switch resolvedTheme {
-        case .dark:
-            let text = Color.white
-            let background = Color.black
-            return GuildAdsBannerPalette(
-                textColor: text,
-                subtitleColor: text.opacity(0.82),
-                cardFillColor: text.opacity(0.09),
-                cardStrokeColor: text.opacity(0.14),
-                railFillColor: text.opacity(0.38),
-                railForegroundColor: background.opacity(0.88)
-            )
-        case .light, .automatic:
-            let text = Color.black
-            let background = Color.white
-            return GuildAdsBannerPalette(
-                textColor: text,
-                subtitleColor: text.opacity(0.75),
-                cardFillColor: text.opacity(0.06),
-                cardStrokeColor: text.opacity(0.18),
-                railFillColor: text.opacity(0.26),
-                railForegroundColor: background.opacity(0.94)
-            )
+        switch resolvedStyle {
+        case .glass:
+            return .glass
+        case .material:
+            return .material
+        case .white:
+            return .white
+        case .black:
+            return .black
+        case .automatic:
+            return .white
         }
     }
 
@@ -186,20 +244,40 @@ public struct GuildAdsBanner: View {
         .padding(.trailing, 20)
         .frame(maxWidth: GuildAdsBannerLayout.maxWidth)
         .frame(minHeight: GuildAdsBannerLayout.height, maxHeight: GuildAdsBannerLayout.height)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(palette.cardFillColor)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(palette.cardStrokeColor, lineWidth: 1)
-                )
-        )
+        .background {
+            cardBackground
+        }
         .contentShape(Rectangle())
         .clipped()
         .overlay(alignment: .trailing) {
             adRailView
         }
         .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    @ViewBuilder
+    private var cardBackground: some View {
+        let shape = RoundedRectangle(cornerRadius: 14)
+        if palette.usesGlass {
+            if #available(iOS 26, macOS 26, *) {
+                shape
+                    .fill(.ultraThinMaterial)
+                    .glassEffect(.regular.interactive(), in: shape)
+                    .overlay(shape.stroke(palette.cardStrokeColor, lineWidth: 1))
+            } else {
+                shape
+                    .fill(.ultraThinMaterial)
+                    .overlay(shape.stroke(palette.cardStrokeColor, lineWidth: 1))
+            }
+        } else if palette.usesVibrantMaterial {
+            shape
+                .fill(.thinMaterial)
+                .overlay(shape.stroke(palette.cardStrokeColor, lineWidth: 1))
+        } else {
+            shape
+                .fill(palette.cardFillColor)
+                .overlay(shape.stroke(palette.cardStrokeColor, lineWidth: 1))
+        }
     }
 
     private func adTextView(for ad: GuildAd) -> some View {
