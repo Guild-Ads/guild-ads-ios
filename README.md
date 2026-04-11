@@ -99,4 +99,4 @@ GuildAds.configure(
 
 ## API and dashboard
 
-Once you've signed up at [guildads.com](https://guildads.com), your dashboard has full API documentation, endpoint references, and response examples. The SDK handles all network communication automatically -- you don't need to call the API directly.
+Once you've signed up at [guildads.com](https://guildads.com), your dashboard has full API documentation. The SDK handles all network communication automatically -- you don't need to call the API directly.
