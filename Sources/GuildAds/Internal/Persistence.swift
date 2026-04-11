@@ -63,6 +63,30 @@ struct QueuedCall: Codable, Sendable, Identifiable {
             click: payload
         )
     }
+
+    func redactingToken() -> QueuedCall {
+        QueuedCall(
+            id: id,
+            createdAt: createdAt,
+            type: type,
+            launch: launch?.redactingToken(),
+            serve: serve?.redactingToken(),
+            impression: impression?.redactingToken(),
+            click: click?.redactingToken()
+        )
+    }
+
+    func restoringToken(_ token: String) -> QueuedCall {
+        QueuedCall(
+            id: id,
+            createdAt: createdAt,
+            type: type,
+            launch: launch?.restoringToken(token),
+            serve: serve?.restoringToken(token),
+            impression: impression?.restoringToken(token),
+            click: click?.restoringToken(token)
+        )
+    }
 }
 
 private struct CachedAdRecord: Codable, Sendable {
@@ -201,9 +225,11 @@ actor GuildAdsQueueStore {
         persist()
     }
 
-    func all() -> [QueuedCall] {
+    func all(restoringToken token: String) -> [QueuedCall] {
         ensureLoaded()
-        return queue.sorted { $0.createdAt < $1.createdAt }
+        return queue
+            .sorted { $0.createdAt < $1.createdAt }
+            .map { $0.restoringToken(token) }
     }
 
     func remove(ids: Set<UUID>) {
@@ -234,7 +260,8 @@ actor GuildAdsQueueStore {
                 at: fileURL.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
-            let data = try encoder.encode(queue)
+            let redacted = queue.map { $0.redactingToken() }
+            let data = try encoder.encode(redacted)
             try data.write(to: fileURL, options: [.atomic])
         } catch {
             // Non-fatal queue persistence failure.

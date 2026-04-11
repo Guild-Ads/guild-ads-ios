@@ -99,6 +99,46 @@ struct ClickRequestPayload: Codable, Sendable {
     }
 }
 
+extension LaunchRequestPayload {
+    func redactingToken() -> LaunchRequestPayload {
+        LaunchRequestPayload(appToken: "", sdkVersion: sdkVersion, timestamp: timestamp, userID: userID, app: app, device: device)
+    }
+
+    func restoringToken(_ token: String) -> LaunchRequestPayload {
+        LaunchRequestPayload(appToken: token, sdkVersion: sdkVersion, timestamp: timestamp, userID: userID, app: app, device: device)
+    }
+}
+
+extension ServeRequestPayload {
+    func redactingToken() -> ServeRequestPayload {
+        ServeRequestPayload(appToken: "", appID: appID, placementID: placementID, sdkVersion: sdkVersion, os: os, osMajor: osMajor, osVersion: osVersion, locale: locale, theme: theme, userID: userID, deviceModel: deviceModel, appVersion: appVersion)
+    }
+
+    func restoringToken(_ token: String) -> ServeRequestPayload {
+        ServeRequestPayload(appToken: token, appID: appID, placementID: placementID, sdkVersion: sdkVersion, os: os, osMajor: osMajor, osVersion: osVersion, locale: locale, theme: theme, userID: userID, deviceModel: deviceModel, appVersion: appVersion)
+    }
+}
+
+extension ImpressionRequestPayload {
+    func redactingToken() -> ImpressionRequestPayload {
+        ImpressionRequestPayload(adID: adID, placementID: placementID, appToken: "", appID: appID, nonce: nonce, timestamp: timestamp, userID: userID, osVersion: osVersion, locale: locale)
+    }
+
+    func restoringToken(_ token: String) -> ImpressionRequestPayload {
+        ImpressionRequestPayload(adID: adID, placementID: placementID, appToken: token, appID: appID, nonce: nonce, timestamp: timestamp, userID: userID, osVersion: osVersion, locale: locale)
+    }
+}
+
+extension ClickRequestPayload {
+    func redactingToken() -> ClickRequestPayload {
+        ClickRequestPayload(adID: adID, placementID: placementID, appToken: "", appID: appID, timestamp: timestamp, userID: userID)
+    }
+
+    func restoringToken(_ token: String) -> ClickRequestPayload {
+        ClickRequestPayload(adID: adID, placementID: placementID, appToken: token, appID: appID, timestamp: timestamp, userID: userID)
+    }
+}
+
 struct AppMetadataPayload: Codable, Sendable {
     let bundleID: String
     let name: String

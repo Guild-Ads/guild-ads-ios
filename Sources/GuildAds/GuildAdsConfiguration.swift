@@ -37,6 +37,10 @@ public struct GuildAdsConfiguration: Sendable {
         sdkVersion: String = "0.1.0",
         maxQueuedCalls: Int = 500
     ) {
+        precondition(
+            baseURL.scheme?.lowercased() == "https",
+            "[GuildAds] baseURL must use HTTPS. Received: \(baseURL.absoluteString)"
+        )
         self.token = token
         self.baseURL = baseURL
         self.prefetchPlacements = prefetchPlacements

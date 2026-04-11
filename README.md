@@ -23,7 +23,7 @@ GuildAds is a lightweight ad SDK built for indie apps. No full-screen takeovers,
 Add the package in Xcode via **File > Add Package Dependencies** and paste the repo URL, or add it to your `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/guildads/GuildAdsSDK.git", from: "1.0.0")
+.package(url: "https://github.com/guildads/GuildAdsSDK.git", from: "1.0.1")
 ```
 
 Then `import GuildAds` wherever you need it.
@@ -97,44 +97,6 @@ GuildAds.configure(
 )
 ```
 
-## API details
+## API and dashboard
 
-Base URL: `https://guildads.com`
-
-| Endpoint | Purpose |
-|---|---|
-| `POST /v1/events/launch` | App launch event with device metadata |
-| `POST /v1/serve` | Fetch an ad decision for a placement |
-| `POST /v1/impression` | Report a banner impression |
-| `POST /v1/events/click` | Report a tap |
-
-Override paths with `GuildAds.configure(..., endpoints: ...)`.
-
-<details>
-<summary>Example <code>/v1/serve</code> response</summary>
-
-Returns `204 No Content` when there's no fill, or:
-
-```json
-{
-  "ad_id": "ad_789",
-  "placement_id": "settings_footer",
-  "creative": {
-    "headline": "Upgrade your journaling",
-    "body": "A calm, private diary app with powerful search.",
-    "image_url": "https://cdn.example.com/creative/ad_789.png",
-    "sponsored_label": "Sponsored"
-  },
-  "destination": {
-    "type": "url",
-    "value": "https://guildads.com/r/ad_789?p=settings_footer&n=signed"
-  },
-  "reporting": {
-    "impression_url": "https://guildads.com/v1/impression"
-  },
-  "expiry": "2026-02-10T18:00:00Z",
-  "nonce": "signed_nonce_here"
-}
-```
-
-</details>
+Once you've signed up at [guildads.com](https://guildads.com), your dashboard has full API documentation, endpoint references, and response examples. The SDK handles all network communication automatically -- you don't need to call the API directly.

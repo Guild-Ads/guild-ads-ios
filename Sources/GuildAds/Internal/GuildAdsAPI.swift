@@ -213,6 +213,12 @@ actor GuildAdsAPI {
 
     private func url(for path: String) -> URL? {
         if let absoluteURL = URL(string: path), absoluteURL.scheme != nil {
+            guard absoluteURL.host == configuration.baseURL.host else {
+                #if DEBUG
+                print("[GuildAds] Blocked endpoint: host '\(absoluteURL.host ?? "")' does not match base '\(configuration.baseURL.host ?? "")'")
+                #endif
+                return nil
+            }
             return absoluteURL
         }
 

@@ -145,7 +145,7 @@ actor GuildAdsClient {
         isFlushing = true
         defer { isFlushing = false }
 
-        let queuedCalls = await queueStore.all()
+        let queuedCalls = await queueStore.all(restoringToken: configuration.token)
         if queuedCalls.isEmpty {
             return
         }
