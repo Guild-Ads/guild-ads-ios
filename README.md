@@ -31,7 +31,7 @@ https://github.com/Guild-Ads/guild-ads-ios
 Or add it to your `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/Guild-Ads/guild-ads-ios.git", from: "1.0.1")
+.package(url: "https://github.com/Guild-Ads/guild-ads-ios.git", from: "1.0.2")
 ```
 
 Then add `"GuildAds"` to the target's dependency list and `import GuildAds` wherever you need it.

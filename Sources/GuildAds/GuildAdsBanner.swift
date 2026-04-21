@@ -90,19 +90,32 @@ private struct GuildAdsBannerPalette {
 public struct GuildAdsBanner: View {
     private let placementID: String
     private let style: GuildAdsBannerStyle
+    private let previewAd: GuildAd?
+    private let debugMockAd: GuildAd?
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.openURL) private var openURL
-    @StateObject private var viewModel = GuildAdsBannerViewModel()
+    @StateObject private var viewModel: GuildAdsBannerViewModel
 
     public init(placementID: String, style: GuildAdsBannerStyle = .automatic) {
         self.placementID = placementID
         self.style = style
+        self.previewAd = nil
+        self.debugMockAd = GuildAdsBannerDebugMockFactory.make(placementID: placementID)
+        _viewModel = StateObject(wrappedValue: GuildAdsBannerViewModel())
+    }
+
+    init(previewAd: GuildAd, style: GuildAdsBannerStyle = .automatic) {
+        self.placementID = previewAd.placementID
+        self.style = style
+        self.previewAd = previewAd
+        self.debugMockAd = nil
+        _viewModel = StateObject(wrappedValue: GuildAdsBannerViewModel(initialAd: previewAd))
     }
 
     public var body: some View {
         VStack {
-            if let ad = viewModel.ad {
+            if let ad = activeAd {
                 Button {
                     openAd(ad, source: "tap")
                 } label: {
@@ -125,21 +138,27 @@ public struct GuildAdsBanner: View {
                 .dynamicTypeSize(.small ... .xLarge)
                 .textCase(nil)
                 .multilineTextAlignment(.leading)
-                .transaction { transaction in
-                    transaction.animation = nil
-                }
             }
         }
         .task(id: placementID) {
+            guard !isMockMode else {
+                return
+            }
             await viewModel.load(placementID: placementID, theme: resolvedTheme)
         }
         .onAppear {
+            guard !isMockMode else {
+                return
+            }
             viewModel.beginAppearance()
             Task {
                 await viewModel.reportImpressionIfNeeded(placementID: placementID, theme: resolvedTheme)
             }
         }
         .onChange(of: viewModel.ad?.id) { _ in
+            guard !isMockMode else {
+                return
+            }
             Task {
                 await viewModel.reportImpressionIfNeeded(placementID: placementID, theme: resolvedTheme)
             }
@@ -179,7 +198,22 @@ public struct GuildAdsBanner: View {
             }
             #endif
         }
+        guard !isMockMode else {
+            return
+        }
         viewModel.handleTap(placementID: placementID)
+    }
+
+    private var activeAd: GuildAd? {
+        previewAd ?? debugMockAd ?? viewModel.ad
+    }
+
+    private var isPreviewMode: Bool {
+        previewAd != nil
+    }
+
+    private var isMockMode: Bool {
+        previewAd != nil || debugMockAd != nil
     }
 
     private var resolvedTheme: GuildAdsTheme {
@@ -224,12 +258,14 @@ public struct GuildAdsBanner: View {
     }
 
     private func bannerCard(for ad: GuildAd) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 0) {
             iconView(for: ad)
+                .padding(.trailing, 8)
 
             adTextView(for: ad)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-            Spacer(minLength: 2)
+            Spacer(minLength: 8)
 
             Text("Get")
                 .font(.caption.weight(.semibold))
@@ -239,11 +275,12 @@ public struct GuildAdsBanner: View {
                 .background(Color.white)
                 .clipShape(Capsule())
                 .shadow(color: Color.black.opacity(0.14), radius: 3, x: 0, y: 1)
+                .fixedSize(horizontal: true, vertical: true)
         }
-        .padding(12)
+        .padding(8)
         .padding(.trailing, 20)
         .frame(maxWidth: GuildAdsBannerLayout.maxWidth)
-        .frame(minHeight: GuildAdsBannerLayout.height, maxHeight: GuildAdsBannerLayout.height)
+        .frame(maxHeight: GuildAdsBannerLayout.height)
         .background {
             cardBackground
         }
@@ -259,6 +296,12 @@ public struct GuildAdsBanner: View {
     private var cardBackground: some View {
         let shape = RoundedRectangle(cornerRadius: 14)
         if palette.usesGlass {
+            #if os(visionOS)
+            // glassEffect(_:in:) is unavailable on visionOS.
+            shape
+                .fill(.ultraThinMaterial)
+                .overlay(shape.stroke(palette.cardStrokeColor, lineWidth: 1))
+            #else
             if #available(iOS 26, macOS 26, *) {
                 shape
                     .fill(.ultraThinMaterial)
@@ -269,6 +312,7 @@ public struct GuildAdsBanner: View {
                     .fill(.ultraThinMaterial)
                     .overlay(shape.stroke(palette.cardStrokeColor, lineWidth: 1))
             }
+            #endif
         } else if palette.usesVibrantMaterial {
             shape
                 .fill(.thinMaterial)
@@ -282,20 +326,30 @@ public struct GuildAdsBanner: View {
 
     private func adTextView(for ad: GuildAd) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(ad.title)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(palette.textColor)
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .minimumScaleFactor(0.85)
+            GuildAdsMarqueeText(
+                text: ad.title,
+                font: .system(size: 13, weight: .semibold),
+                color: palette.textColor,
+                measureFont: titleMeasureFont
+            )
 
             Text(ad.subtitle)
-                .font(.caption)
+                .font(.system(size: 10))
                 .foregroundStyle(palette.subtitleColor)
                 .lineLimit(2)
+                .lineSpacing(-1)
                 .truncationMode(.tail)
-                .minimumScaleFactor(0.85)
+                .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    private var titleMeasureFont: GuildAdsBannerPlatformFont {
+        #if canImport(UIKit)
+        let descriptor = UIFontDescriptor.preferredFontDescriptor(withTextStyle: .subheadline)
+        return UIFont.systemFont(ofSize: max(8, descriptor.pointSize - 2), weight: .semibold)
+        #elseif canImport(AppKit)
+        return NSFont.systemFont(ofSize: max(8, NSFont.smallSystemFontSize - 2), weight: .semibold)
+        #endif
     }
 
     private var adRailView: some View {
@@ -340,10 +394,136 @@ public struct GuildAdsBanner: View {
     }
 }
 
+private enum GuildAdsBannerDebugMockFactory {
+    static func make(placementID: String) -> GuildAd? {
+        #if DEBUG
+        return GuildAd(
+            id: "debug_mock_\(placementID)",
+            placementID: placementID,
+            title: "Guild Ads",
+            subtitle: "The indie-friendly, privacy-respecting ad network",
+            iconURL: URL(string: "https://guildads.com/logo-1024.png"),
+            destinationURL: URL(string: "https://guildads.com")!
+        )
+        #else
+        return nil
+        #endif
+    }
+}
+
+private struct GuildAdsMarqueeText: View {
+    let text: String
+    let font: Font
+    let color: Color
+    let measureFont: GuildAdsBannerPlatformFont
+
+    private let spacing: CGFloat = 18
+    private let pointsPerSecond: CGFloat = 30
+    private let pauseDuration: TimeInterval = 3
+
+    @State private var cycleStart = Date()
+
+    var body: some View {
+        let stringWidth = text.guildAdsWidth(using: measureFont)
+        let stringHeight = text.guildAdsHeight(using: measureFont)
+        let gap = max(spacing, stringHeight * 1.5)
+        let distance = stringWidth + gap
+
+        return GeometryReader { geo in
+            let needsScrolling = stringWidth > geo.size.width
+
+            ZStack(alignment: .leading) {
+                if needsScrolling {
+                    TimelineView(.periodic(from: .now, by: 1.0 / 30.0)) { context in
+                        marqueeTrack(
+                            at: context.date,
+                            distance: distance,
+                            spacing: gap,
+                            laneWidth: geo.size.width
+                        )
+                    }
+                } else {
+                    baseText
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .minimumScaleFactor(0.85)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .clipped()
+            .onAppear {
+                cycleStart = Date()
+            }
+            .onChange(of: text) { _ in
+                cycleStart = Date()
+            }
+            .onChange(of: geo.size.width) { _ in
+                cycleStart = Date()
+            }
+        }
+        .frame(height: stringHeight)
+    }
+
+    private var baseText: some View {
+        Text(text)
+            .font(font)
+            .foregroundStyle(color)
+    }
+
+    private var scrollingText: some View {
+        baseText
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+    }
+
+    private func marqueeTrack(at date: Date, distance: CGFloat, spacing: CGFloat, laneWidth: CGFloat) -> some View {
+        let travelDuration = max(0.1, Double(distance / pointsPerSecond))
+        let cycleDuration = pauseDuration + travelDuration
+        let elapsed = date.timeIntervalSince(cycleStart)
+        let cycleTime = elapsed.truncatingRemainder(dividingBy: cycleDuration)
+
+        let offset: CGFloat
+        if cycleTime < pauseDuration {
+            offset = 0
+        } else {
+            let travelTime = cycleTime - pauseDuration
+            offset = -min(distance, CGFloat(travelTime) * pointsPerSecond)
+        }
+
+        return HStack(spacing: spacing) {
+            scrollingText
+            scrollingText
+        }
+        .offset(x: offset)
+        .frame(width: laneWidth, alignment: .leading)
+        .clipped()
+    }
+}
+
+private extension String {
+    func guildAdsWidth(using font: GuildAdsBannerPlatformFont) -> CGFloat {
+        #if canImport(UIKit)
+        return (self as NSString).size(withAttributes: [.font: font]).width
+        #elseif canImport(AppKit)
+        return (self as NSString).size(withAttributes: [.font: font]).width
+        #endif
+    }
+
+    func guildAdsHeight(using font: GuildAdsBannerPlatformFont) -> CGFloat {
+        #if canImport(UIKit)
+        return (self as NSString).size(withAttributes: [.font: font]).height
+        #elseif canImport(AppKit)
+        return (self as NSString).size(withAttributes: [.font: font]).height
+        #endif
+    }
+}
+
 #if canImport(UIKit)
 private typealias GuildAdsBannerPlatformImage = UIImage
+private typealias GuildAdsBannerPlatformFont = UIFont
 #elseif canImport(AppKit)
 private typealias GuildAdsBannerPlatformImage = NSImage
+private typealias GuildAdsBannerPlatformFont = NSFont
 #endif
 
 private struct GuildAdsBannerMarkView: View {
@@ -508,6 +688,10 @@ private final class GuildAdsBannerViewModel: ObservableObject {
     @Published var ad: GuildAd?
     private var impressionReportedAdID: String?
 
+    init(initialAd: GuildAd? = nil) {
+        self.ad = initialAd
+    }
+
     func load(placementID: String, theme: GuildAdsTheme) async {
         #if DEBUG
         print("[GuildAds] Banner load for placement '\(placementID)'")
@@ -568,3 +752,30 @@ private final class GuildAdsBannerViewModel: ObservableObject {
         }
     }
 }
+
+#if DEBUG
+#Preview("Guild Ads Sample Creative") {
+    ScrollView {
+        VStack(spacing: 10) {
+            ForEach(GuildAdsBannerPreviewFixtures.allAds) { ad in
+                GuildAdsBanner(previewAd: ad, style: .automatic)
+            }
+        }
+        .padding()
+    }
+    .frame(maxWidth: 420)
+}
+
+private enum GuildAdsBannerPreviewFixtures {
+    static let allAds: [GuildAd] = [
+        GuildAd(
+            id: "preview_guild_ads",
+            placementID: "preview_guild_ads",
+            title: "Guild Ads",
+            subtitle: "The indie-friendly, privacy-respecting ad network",
+            iconURL: URL(string: "https://guildads.com/logo-1024.png"),
+            destinationURL: URL(string: "https://guildads.com")!
+        )
+    ]
+}
+#endif

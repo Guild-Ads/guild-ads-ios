@@ -26,6 +26,23 @@ public enum GuildAds {
     }
 
     public static func configure(configuration: GuildAdsConfiguration) {
+        let shouldDisableNetworkingForDebug = _isDebugAssertConfiguration()
+            && ProcessInfo.processInfo.environment["GUILDADS_ENABLE_LIVE_DEBUG"] != "1"
+
+        if shouldDisableNetworkingForDebug {
+            client = nil
+            #if canImport(UIKit)
+            if targetEnvironment(simulator) {
+                print("[GuildAds] DEBUG simulator mode: SDK networking disabled, showing mock banner creative.")
+            } else {
+                print("[GuildAds] DEBUG mode: SDK networking disabled, showing mock banner creative.")
+            }
+            #else
+            print("[GuildAds] DEBUG mode: SDK networking disabled, showing mock banner creative.")
+            #endif
+            return
+        }
+
         let client = GuildAdsClient(configuration: configuration)
         self.client = client
 

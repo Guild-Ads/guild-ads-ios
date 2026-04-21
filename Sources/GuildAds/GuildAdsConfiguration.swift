@@ -34,7 +34,7 @@ public struct GuildAdsConfiguration: Sendable {
         baseURL: URL = URL(string: "https://guildads.com")!,
         prefetchPlacements: [String] = [],
         endpoints: GuildAdsEndpoints = .default,
-        sdkVersion: String = "0.1.0",
+        sdkVersion: String = "1.0.2",
         maxQueuedCalls: Int = 500
     ) {
         precondition(
