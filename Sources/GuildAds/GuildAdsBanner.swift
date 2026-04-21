@@ -314,15 +314,16 @@ public struct GuildAdsBanner: View {
         VStack(alignment: .leading, spacing: 2) {
             GuildAdsMarqueeText(
                 text: ad.title,
-                font: .subheadline.weight(.semibold),
+                font: .system(size: 13, weight: .semibold),
                 color: palette.textColor,
                 measureFont: titleMeasureFont
             )
 
             Text(ad.subtitle)
-                .font(.caption)
+                .font(.system(size: 10))
                 .foregroundStyle(palette.subtitleColor)
                 .lineLimit(2)
+                .lineSpacing(-1)
                 .truncationMode(.tail)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -331,9 +332,9 @@ public struct GuildAdsBanner: View {
     private var titleMeasureFont: GuildAdsBannerPlatformFont {
         #if canImport(UIKit)
         let descriptor = UIFontDescriptor.preferredFontDescriptor(withTextStyle: .subheadline)
-        return UIFont.systemFont(ofSize: descriptor.pointSize, weight: .semibold)
+        return UIFont.systemFont(ofSize: max(8, descriptor.pointSize - 2), weight: .semibold)
         #elseif canImport(AppKit)
-        return NSFont.systemFont(ofSize: NSFont.smallSystemFontSize, weight: .semibold)
+        return NSFont.systemFont(ofSize: max(8, NSFont.smallSystemFontSize - 2), weight: .semibold)
         #endif
     }
 
