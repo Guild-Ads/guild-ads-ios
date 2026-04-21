@@ -91,6 +91,7 @@ public struct GuildAdsBanner: View {
     private let placementID: String
     private let style: GuildAdsBannerStyle
     private let previewAd: GuildAd?
+    private let debugMockAd: GuildAd?
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.openURL) private var openURL
@@ -100,6 +101,7 @@ public struct GuildAdsBanner: View {
         self.placementID = placementID
         self.style = style
         self.previewAd = nil
+        self.debugMockAd = GuildAdsBannerDebugMockFactory.make(placementID: placementID)
         _viewModel = StateObject(wrappedValue: GuildAdsBannerViewModel())
     }
 
@@ -107,6 +109,7 @@ public struct GuildAdsBanner: View {
         self.placementID = previewAd.placementID
         self.style = style
         self.previewAd = previewAd
+        self.debugMockAd = nil
         _viewModel = StateObject(wrappedValue: GuildAdsBannerViewModel(initialAd: previewAd))
     }
 
@@ -138,13 +141,13 @@ public struct GuildAdsBanner: View {
             }
         }
         .task(id: placementID) {
-            guard !isPreviewMode else {
+            guard !isMockMode else {
                 return
             }
             await viewModel.load(placementID: placementID, theme: resolvedTheme)
         }
         .onAppear {
-            guard !isPreviewMode else {
+            guard !isMockMode else {
                 return
             }
             viewModel.beginAppearance()
@@ -153,7 +156,7 @@ public struct GuildAdsBanner: View {
             }
         }
         .onChange(of: viewModel.ad?.id) { _ in
-            guard !isPreviewMode else {
+            guard !isMockMode else {
                 return
             }
             Task {
@@ -195,18 +198,22 @@ public struct GuildAdsBanner: View {
             }
             #endif
         }
-        guard !isPreviewMode else {
+        guard !isMockMode else {
             return
         }
         viewModel.handleTap(placementID: placementID)
     }
 
     private var activeAd: GuildAd? {
-        previewAd ?? viewModel.ad
+        previewAd ?? debugMockAd ?? viewModel.ad
     }
 
     private var isPreviewMode: Bool {
         previewAd != nil
+    }
+
+    private var isMockMode: Bool {
+        previewAd != nil || debugMockAd != nil
     }
 
     private var resolvedTheme: GuildAdsTheme {
@@ -377,6 +384,23 @@ public struct GuildAdsBanner: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
         }
+    }
+}
+
+private enum GuildAdsBannerDebugMockFactory {
+    static func make(placementID: String) -> GuildAd? {
+        #if DEBUG
+        return GuildAd(
+            id: "debug_mock_\(placementID)",
+            placementID: placementID,
+            title: "Guild Ads",
+            subtitle: "The indie-friendly, privacy-respecting ad network",
+            iconURL: URL(string: "https://guildads.com/logo-1024.png"),
+            destinationURL: URL(string: "https://guildads.com")!
+        )
+        #else
+        return nil
+        #endif
     }
 }
 
@@ -723,23 +747,7 @@ private final class GuildAdsBannerViewModel: ObservableObject {
 }
 
 #if DEBUG
-#Preview("Marquee Demo (Overflow)") {
-    GuildAdsBanner(
-        previewAd: GuildAd(
-            id: "preview_marquee_demo",
-            placementID: "preview_marquee_demo",
-            title: "This is an intentionally very long banner title to demonstrate marquee scrolling",
-            subtitle: "Marquee should move left continuously when title exceeds width.",
-            iconURL: nil,
-            destinationURL: URL(string: "https://guildads.com")!
-        ),
-        style: .automatic
-    )
-    .frame(width: 320)
-    .padding()
-}
-
-#Preview("All Supabase Campaign Creatives") {
+#Preview("Guild Ads Sample Creative") {
     ScrollView {
         VStack(spacing: 10) {
             ForEach(GuildAdsBannerPreviewFixtures.allAds) { ad in
@@ -754,172 +762,12 @@ private final class GuildAdsBannerViewModel: ObservableObject {
 private enum GuildAdsBannerPreviewFixtures {
     static let allAds: [GuildAd] = [
         GuildAd(
-            id: "2f7cd11b-880a-4bd2-9ddf-4bf2cff3c0fa",
-            placementID: "preview_2f7cd11b",
-            title: "Easy Dice",
-            subtitle: "Simple modern animated dices",
-            iconURL: URL(string: "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/65/db/89/65db89f6-375e-fea7-41d4-9bf3ea0da135/AppIcon-0-0-1x_U007epad-0-1-sRGB-85-220.png/512x512bb.jpg"),
-            destinationURL: URL(string: "https://apps.apple.com/us/app/easy-dice/id1514806286?uo=4") ?? URL(string: "https://guildads.com")!
-        ),
-        GuildAd(
-            id: "b91a39b9-efda-423f-91b7-d21caa960672",
-            placementID: "preview_b91a39b9",
-            title: "Finalist Daily Planner",
-            subtitle: "Life Organizer for Home & Away",
-            iconURL: URL(string: "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/cf/49/f8/cf49f8f8-9dd1-07b5-a0d2-ce29bc7a1272/AppIcon-0-0-1x_U007epad-0-1-sRGB-85-220.png/512x512bb.jpg"),
-            destinationURL: URL(string: "https://apps.apple.com/us/app/finalist-daily-planner/id6447014685?uo=4") ?? URL(string: "https://guildads.com")!
-        ),
-        GuildAd(
-            id: "e5e31c88-ef22-4aec-a796-73e7085cc493",
-            placementID: "preview_e5e31c88",
-            title: "Nihongo - Japanese Study Tool",
-            subtitle: "Camera lookup, smart flashcards, and deep kanji insights",
-            iconURL: URL(string: "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/7e/5d/47/7e5d47b4-e4fc-a4e6-edf9-df8d6f286053/AppIcon-0-0-1x_U007epad-0-0-0-1-0-0-85-220.png/512x512bb.jpg"),
-            destinationURL: URL(string: "https://apps.apple.com/app/apple-store/id881697245?pt=127247052&ct=guild-ads&mt=8") ?? URL(string: "https://guildads.com")!
-        ),
-        GuildAd(
-            id: "1fc7043b-424d-4791-9632-a2948bdc3404",
-            placementID: "preview_1fc7043b",
-            title: "Rainy Skies",
-            subtitle: "Beautiful Weather at a Glance",
-            iconURL: URL(string: "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/3d/f1/d7/3df1d7c6-cffc-d4ed-c00d-c996e7b00ea5/LiquidGlass1-0-0-1x_U007epad-0-1-0-sRGB-85-220.png/512x512bb.jpg"),
-            destinationURL: URL(string: "https://apps.apple.com/us/app/rainy-skies/id1637453069?uo=4") ?? URL(string: "https://guildads.com")!
-        ),
-        GuildAd(
-            id: "8c90566d-bcef-445a-98cb-fad56fbfe971",
-            placementID: "preview_8c90566d",
-            title: "Mostly Good Metrics",
-            subtitle: "Drop in an SDK, Track events, funnels, and retention.",
-            iconURL: URL(string: "https://mostlygoodmetrics.com/images/og-image-icon.png"),
-            destinationURL: URL(string: "https://mostlygoodmetrics.com") ?? URL(string: "https://guildads.com")!
-        ),
-        GuildAd(
-            id: "716db9cd-c010-435f-b261-4eed7ef04455",
-            placementID: "preview_716db9cd",
-            title: "Scoreless",
-            subtitle: "Check soccer matches without spoiling the score.",
-            iconURL: URL(string: "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/cc/24/87/cc2487c8-7907-0ea3-61d3-8caf5751f976/AppIcon-0-1x_U007ephone-0-1-0-85-220-0.png/512x512bb.jpg"),
-            destinationURL: URL(string: "https://apps.apple.com/us/app/scoreless/id6523435481?uo=4") ?? URL(string: "https://guildads.com")!
-        ),
-        GuildAd(
-            id: "8600d6df-2253-437d-9df8-fa8fa59deee8",
-            placementID: "preview_8600d6df",
-            title: "Tripsy: Travel Planner",
-            subtitle: "Organize all your trips in one place.",
-            iconURL: URL(string: "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/ef/73/9b/ef739b42-3be2-91b4-6c96-1d90327a7504/App_Icon_Original-0-1x_U007epad-0-0-0-1-0-0-sRGB-85-220-0.png/512x512bb.jpg"),
-            destinationURL: URL(string: "https://apps.apple.com/us/app/tripsy-travel-planner/id1429967544?uo=4") ?? URL(string: "https://guildads.com")!
-        ),
-        GuildAd(
-            id: "7b280370-165c-4868-a0ab-546ed0afb304",
-            placementID: "preview_7b280370",
-            title: "Thrive: Financial Intelligence",
-            subtitle: "Ask. Learn. Grow your money.",
-            iconURL: URL(string: "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/bf/ee/52/bfee52cf-85b2-3b21-a496-c1531153e145/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg"),
-            destinationURL: URL(string: "https://apps.apple.com/us/app/thrive-financial-intelligence/id6741694500?uo=4") ?? URL(string: "https://guildads.com")!
-        ),
-        GuildAd(
-            id: "cc348edd-8bb9-4a8f-a303-54cdcab0f1b6",
-            placementID: "preview_cc348edd",
-            title: "Scores for NCAA Sports",
-            subtitle: "Stats and scores for most NCAA Division 1,2 and 3 sports",
-            iconURL: URL(string: "https://scoresforncaa.com/assets/images/app-store-icon.jpeg"),
-            destinationURL: URL(string: "https://apps.apple.com/us/app/scores-for-ncaa-sports/id6739069456") ?? URL(string: "https://guildads.com")!
-        ),
-        GuildAd(
-            id: "cbc6f449-bf7b-4a3d-be19-38008729eb65",
-            placementID: "preview_cbc6f449",
-            title: "Tiny Docs",
-            subtitle: "PDF Editing Made Simple.",
-            iconURL: URL(string: "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/25/58/99/25589910-89b6-144f-01b3-538f744fb607/AppIconRed-0-0-1x_U007epad-0-0-0-1-0-sRGB-85-220.png/512x512bb.jpg"),
-            destinationURL: URL(string: "https://apps.apple.com/us/app/tiny-docs/id6758741132?uo=4") ?? URL(string: "https://guildads.com")!
-        ),
-        GuildAd(
-            id: "5cc8d777-7eb9-4079-8101-bedf8285657e",
-            placementID: "preview_5cc8d777",
-            title: "iCloud Photos & Drive Backup",
-            subtitle: "Parachute Backup - Protect Your Precious Memories.",
-            iconURL: URL(string: "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/fa/08/9b/fa089baf-6010-3d33-a89e-b295c9d7e15f/Parachute-iOS-0-0-1x_U007epad-0-1-sRGB-85-220.png/512x512bb.jpg"),
-            destinationURL: URL(string: "https://apps.apple.com/app/apple-store/id6749824842?pt=125087879&ct=ppc-guildads&mt=8") ?? URL(string: "https://guildads.com")!
-        ),
-        GuildAd(
-            id: "1582b656-abb5-4e62-9f51-53074e68b0dc",
-            placementID: "preview_1582b656",
-            title: "Overcast",
-            subtitle: "A very good podcast app.",
-            iconURL: URL(string: "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/89/f0/0f/89f00fac-ab2f-bb30-e772-db3e514e3943/AppIcon-0-0-1x_U007epad-0-1-sRGB-85-220.png/512x512bb.jpg"),
-            destinationURL: URL(string: "https://apps.apple.com/app/apple-store/id888422857?pt=4432800&ct=Guild%20Ads&mt=8") ?? URL(string: "https://guildads.com")!
-        ),
-        GuildAd(
-            id: "73c0fa92-8fc3-459f-888b-edf7cb705732",
-            placementID: "preview_73c0fa92",
-            title: "App Store",
-            subtitle: "Download MTG Scanner - Lion’s Eye by Orlando Gabriel Herrera on the App Store. See screenshots, ratings and reviews, user tips, and more apps like MTG Scanner -…",
-            iconURL: URL(string: "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/48/4e/6c/484e6c32-8f87-6f32-a791-4864afcd95f0/Placeholder.mill/1200x630wa.jpg"),
-            destinationURL: URL(string: "https://apps.apple.com/us/app/mtg-scanner-lions-eye/id1546754798") ?? URL(string: "https://guildads.com")!
-        ),
-        GuildAd(
-            id: "82ac3fbe-c324-4998-ad66-a6dbde46f0f7",
-            placementID: "preview_82ac3fbe",
-            title: "Alpenglow: Sunset Predictions",
-            subtitle: "Golden Hour Times",
-            iconURL: URL(string: "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/b6/c7/0f/b6c70ff4-a594-e667-9894-5675ea16776a/AppIcon-0-0-1x_U007epad-0-0-0-1-0-0-sRGB-85-220.png/512x512bb.jpg"),
-            destinationURL: URL(string: "https://apps.apple.com/us/app/sunset-predictions-alpenglow/id978589174?uo=4&ct=Guild") ?? URL(string: "https://guildads.com")!
-        ),
-        GuildAd(
-            id: "3e0384da-8569-4478-9ef0-89d767b4a8af",
-            placementID: "preview_3e0384da",
-            title: "Here 2 There - Instant Navigation",
-            subtitle: "Save your favorite places. Get there fast.",
-            iconURL: URL(string: "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/50/0e/16/500e169f-8a61-8566-060f-511c1d205932/Here2ThereIcon-0-0-1x_U007epad-0-1-85-220.png/512x512bb.jpg"),
-            destinationURL: URL(string: "https://apps.apple.com/app/apple-store/id6751860553?pt=2108296&ct=guild&mt=8") ?? URL(string: "https://guildads.com")!
-        ),
-        GuildAd(
-            id: "0cbfa1aa-eee9-4cd4-8152-83a84dc5315f",
-            placementID: "preview_0cbfa1aa",
-            title: "Tethered - rope survival game",
-            subtitle: "Don't cut the rope!",
-            iconURL: URL(string: "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/fb/31/6d/fb316d8c-4ab2-9116-8bbf-4d65b7ff9b7a/TetheredIcon-0-0-1x_U007epad-0-1-0-sRGB-85-220.png/512x512bb.jpg"),
-            destinationURL: URL(string: "https://apps.apple.com/app/apple-store/id6755638434?pt=2108296&ct=guild&mt=8") ?? URL(string: "https://guildads.com")!
-        ),
-        GuildAd(
-            id: "1b584edb-2bfc-465a-9c87-9327a55d33d3",
-            placementID: "preview_1b584edb",
-            title: "Letters - daily word game",
-            subtitle: "Spell words. Earn points. Beat your friends.",
-            iconURL: URL(string: "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/65/db/c5/65dbc5ae-5bb8-ab2d-57ad-a0ed350c7992/AppIcon-0-0-1x_U007epad-0-1-85-220.png/512x512bb.jpg"),
-            destinationURL: URL(string: "https://apps.apple.com/app/apple-store/id6741609921?pt=2108296&ct=guild&mt=8") ?? URL(string: "https://guildads.com")!
-        ),
-        GuildAd(
-            id: "743bd6d8-3379-4a4e-a8e6-851d09dc6b8f",
-            placementID: "preview_743bd6d8",
-            title: "Tinseltown: Watchlist & Streaming Tracker",
-            subtitle: "Find new things to watch and where to watch them",
-            iconURL: URL(string: "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/71/4c/c3/714cc327-9a90-3da1-983d-287a0ecbf2e2/AppIcon-0-0-1x_U007epad-0-1-sRGB-85-220.png/512x512bb.jpg"),
-            destinationURL: URL(string: "https://apps.apple.com/us/app/tinseltown-movie-tv-tracker/id6480349413?uo=4") ?? URL(string: "https://guildads.com")!
-        ),
-        GuildAd(
-            id: "5be6f944-f447-4ee3-b1b3-49a88deaabf6",
-            placementID: "preview_5be6f944",
-            title: "Tasks: Todo Lists & Kanban",
-            subtitle: "The most customizable and native task manager for Apple's platforms!",
-            iconURL: URL(string: "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/21/59/5a/21595af7-1160-de8f-3b35-0ad2915c26db/AppIcon-0-0-1x_U007epad-0-0-0-1-0-0-sRGB-85-220.png/512x512bb.jpg"),
-            destinationURL: URL(string: "https://apps.apple.com/us/app/tasks-todo-lists-kanban/id1502903102?uo=4") ?? URL(string: "https://guildads.com")!
-        ),
-        GuildAd(
-            id: "0893722b-cdfe-4ac9-8c5a-e620a4a1aed6",
-            placementID: "preview_0893722b",
-            title: "KeepCount: Tally Counter",
-            subtitle: "Fast, tactile scoreboard",
-            iconURL: nil,
-            destinationURL: URL(string: "https://apps.apple.com/us/app/keepcount-tally-counter/id6758891370?uo=4") ?? URL(string: "https://guildads.com")!
-        ),
-        GuildAd(
-            id: "afa19d0b-e338-40ac-8ee7-d3175e1b1bee",
-            placementID: "preview_afa19d0b",
-            title: "Sticky Widgets",
-            subtitle: "Simple Home Screen notes",
-            iconURL: nil,
-            destinationURL: URL(string: "https://apps.apple.com/us/app/sticky-widgets/id1533254320?uo=4") ?? URL(string: "https://guildads.com")!
+            id: "preview_guild_ads",
+            placementID: "preview_guild_ads",
+            title: "Guild Ads",
+            subtitle: "The indie-friendly, privacy-respecting ad network",
+            iconURL: URL(string: "https://guildads.com/logo-1024.png"),
+            destinationURL: URL(string: "https://guildads.com")!
         )
     ]
 }
