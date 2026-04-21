@@ -296,6 +296,12 @@ public struct GuildAdsBanner: View {
     private var cardBackground: some View {
         let shape = RoundedRectangle(cornerRadius: 14)
         if palette.usesGlass {
+            #if os(visionOS)
+            // glassEffect(_:in:) is unavailable on visionOS.
+            shape
+                .fill(.ultraThinMaterial)
+                .overlay(shape.stroke(palette.cardStrokeColor, lineWidth: 1))
+            #else
             if #available(iOS 26, macOS 26, *) {
                 shape
                     .fill(.ultraThinMaterial)
@@ -306,6 +312,7 @@ public struct GuildAdsBanner: View {
                     .fill(.ultraThinMaterial)
                     .overlay(shape.stroke(palette.cardStrokeColor, lineWidth: 1))
             }
+            #endif
         } else if palette.usesVibrantMaterial {
             shape
                 .fill(.thinMaterial)
