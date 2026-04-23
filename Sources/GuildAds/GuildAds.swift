@@ -33,9 +33,9 @@ public enum GuildAds {
             client = nil
             #if canImport(UIKit)
             #if targetEnvironment(simulator)
-            print("[GuildAds] DEBUG simulator mode: SDK networking disabled, showing mock banner creative.")
+                print("[GuildAds] DEBUG simulator mode: SDK networking disabled, showing mock banner creative.")
             #else
-            print("[GuildAds] DEBUG mode: SDK networking disabled, showing mock banner creative.")
+                print("[GuildAds] DEBUG mode: SDK networking disabled, showing mock banner creative.")
             #endif
             #else
             print("[GuildAds] DEBUG mode: SDK networking disabled, showing mock banner creative.")
