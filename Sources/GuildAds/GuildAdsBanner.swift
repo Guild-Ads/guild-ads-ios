@@ -257,6 +257,10 @@ public struct GuildAdsBanner: View {
         }
     }
 
+    private var bannerShape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: 14, style: .continuous)
+    }
+
     private func bannerCard(for ad: GuildAd) -> some View {
         HStack(spacing: 0) {
             iconView(for: ad)
@@ -284,17 +288,20 @@ public struct GuildAdsBanner: View {
         .background {
             cardBackground
         }
-        .contentShape(Rectangle())
+        .contentShape(bannerShape)
+        #if os(visionOS)
+        .contentShape(.hoverEffect, bannerShape)
+        #endif
         .clipped()
         .overlay(alignment: .trailing) {
             adRailView
         }
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .clipShape(bannerShape)
     }
 
     @ViewBuilder
     private var cardBackground: some View {
-        let shape = RoundedRectangle(cornerRadius: 14)
+        let shape = bannerShape
         if palette.usesGlass {
             #if os(visionOS)
             // glassEffect(_:in:) is unavailable on visionOS.
