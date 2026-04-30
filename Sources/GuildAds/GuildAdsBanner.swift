@@ -297,29 +297,16 @@ public struct GuildAdsBanner: View {
             adRailView
         }
         .clipShape(bannerShape)
+        .modifier(GuildAdsBannerGlassEffect(usesGlass: palette.usesGlass, shape: bannerShape))
     }
 
     @ViewBuilder
     private var cardBackground: some View {
         let shape = bannerShape
         if palette.usesGlass {
-            #if os(visionOS)
-            // glassEffect(_:in:) is unavailable on visionOS.
             shape
                 .fill(.ultraThinMaterial)
                 .overlay(shape.stroke(palette.cardStrokeColor, lineWidth: 1))
-            #else
-            if #available(iOS 26, macOS 26, *) {
-                shape
-                    .fill(.ultraThinMaterial)
-                    .glassEffect(.regular.interactive(), in: shape)
-                    .overlay(shape.stroke(palette.cardStrokeColor, lineWidth: 1))
-            } else {
-                shape
-                    .fill(.ultraThinMaterial)
-                    .overlay(shape.stroke(palette.cardStrokeColor, lineWidth: 1))
-            }
-            #endif
         } else if palette.usesVibrantMaterial {
             shape
                 .fill(.thinMaterial)
@@ -398,6 +385,24 @@ public struct GuildAdsBanner: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
         }
+    }
+}
+
+private struct GuildAdsBannerGlassEffect: ViewModifier {
+    let usesGlass: Bool
+    let shape: RoundedRectangle
+
+    func body(content: Content) -> some View {
+        #if os(visionOS)
+        // glassEffect(_:in:) is unavailable on visionOS.
+        content
+        #else
+        if usesGlass, #available(iOS 26, macOS 26, *) {
+            content.glassEffect(.regular.interactive(), in: shape)
+        } else {
+            content
+        }
+        #endif
     }
 }
 
