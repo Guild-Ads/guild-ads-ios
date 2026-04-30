@@ -114,7 +114,7 @@ import Testing
     await store.enqueue(QueuedCall.launch(sampleLaunchPayload()), maxCount: 10)
 
     let reloaded = GuildAdsQueueStore(directoryURL: directory)
-    let calls = await reloaded.all()
+    let calls = await reloaded.all(restoringToken: "test_token")
 
     #expect(calls.count == 1)
     #expect(calls.first?.type == .launch)
