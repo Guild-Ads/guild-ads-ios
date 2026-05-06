@@ -231,6 +231,18 @@ let fresh = await GuildAds.refreshAd(for: "settings_footer")
 
 Both methods return `nil` if no ad is available. Impression and click tracking are handled by `GuildAdsBanner` and are not part of the manual load path.
 
+## Manage your account from the CLI
+
+Your apps, SDK tokens, campaigns, and earnings are also accessible from the terminal via the [Guild Ads CLI](https://www.npmjs.com/package/guild-ads):
+
+```bash
+npm install -g guild-ads
+guild-ads auth login
+guild-ads tokens create --app <appId> --name "Production"
+```
+
+Every command supports `--json` output, so you can script account setup or wire it into other tooling. Run `guild-ads --help` for the full command tree.
+
 ## API and dashboard
 
 Once you've signed up at [guildads.com](https://guildads.com), your dashboard has full API documentation. The SDK handles all network communication automatically -- you don't need to call the API directly.
