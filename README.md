@@ -243,6 +243,24 @@ guild-ads tokens create --app <appId> --name "Production"
 
 Every command supports `--json` output, so you can script account setup or wire it into other tooling. Run `guild-ads --help` for the full command tree.
 
+## Coding agent plugins
+
+If you use Claude Code or Codex, the [`guild-ads-plugin`](https://github.com/Guild-Ads/guild-ads-plugin) repo packages skills that walk your agent through publisher and advertiser setup end-to-end — installing the CLI, signing up, registering your app, generating an SDK token, integrating this SDK, and setting up Stripe payouts. Once installed, you can ask your agent to "set me up on Guild Ads as a publisher" and it does the rest.
+
+**Claude Code:**
+
+```
+/plugin marketplace add Guild-Ads/guild-ads-plugin
+/plugin install guild-ads@guild-ads
+/reload-plugins
+```
+
+**Codex:**
+
+```
+codex plugin marketplace add Guild-Ads/guild-ads-plugin
+```
+
 ## API and dashboard
 
 Once you've signed up at [guildads.com](https://guildads.com), your dashboard has full API documentation. The SDK handles all network communication automatically -- you don't need to call the API directly.
