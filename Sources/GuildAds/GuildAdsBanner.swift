@@ -23,7 +23,12 @@ public enum GuildAdsBannerStyle: Sendable {
 private enum GuildAdsBannerLayout {
     static let maxWidth: CGFloat = 360
     static let height: CGFloat = 50
+    static let horizontalPadding: CGFloat = 8
+    static let verticalPadding: CGFloat = 5
+    static let contentHeight: CGFloat = height - (verticalPadding * 2)
     static let adRailWidth: CGFloat = 20
+    static let titleFontSize: CGFloat = 13
+    static let subtitleFontSize: CGFloat = 10
 }
 
 private enum GuildAdsBannerAssets {
@@ -282,10 +287,12 @@ public struct GuildAdsBanner: View {
                 .shadow(color: Color.black.opacity(0.14), radius: 3, x: 0, y: 1)
                 .fixedSize(horizontal: true, vertical: true)
         }
-        .padding(8)
+        .frame(height: GuildAdsBannerLayout.contentHeight, alignment: .center)
+        .padding(.horizontal, GuildAdsBannerLayout.horizontalPadding)
+        .padding(.vertical, GuildAdsBannerLayout.verticalPadding)
         .padding(.trailing, 20)
         .frame(maxWidth: GuildAdsBannerLayout.maxWidth)
-        .frame(maxHeight: GuildAdsBannerLayout.height)
+        .frame(height: GuildAdsBannerLayout.height)
         .background {
             cardBackground
         }
@@ -323,27 +330,29 @@ public struct GuildAdsBanner: View {
         VStack(alignment: .leading, spacing: 2) {
             GuildAdsMarqueeText(
                 text: ad.title,
-                font: .system(size: 13, weight: .semibold),
+                font: .system(size: GuildAdsBannerLayout.titleFontSize, weight: .semibold),
                 color: palette.textColor,
                 measureFont: titleMeasureFont
             )
 
             Text(ad.subtitle)
-                .font(.system(size: 10))
+                .font(.system(size: GuildAdsBannerLayout.subtitleFontSize))
                 .foregroundStyle(palette.subtitleColor)
                 .lineLimit(2)
-                .lineSpacing(-1)
+                .lineSpacing(-2)
                 .truncationMode(.tail)
-                .fixedSize(horizontal: false, vertical: true)
+                .minimumScaleFactor(0.85)
+                .allowsTightening(true)
         }
+        .frame(height: GuildAdsBannerLayout.contentHeight, alignment: .center)
+        .clipped()
     }
 
     private var titleMeasureFont: GuildAdsBannerPlatformFont {
         #if canImport(UIKit)
-        let descriptor = UIFontDescriptor.preferredFontDescriptor(withTextStyle: .subheadline)
-        return UIFont.systemFont(ofSize: max(8, descriptor.pointSize - 2), weight: .semibold)
+        return UIFont.systemFont(ofSize: GuildAdsBannerLayout.titleFontSize, weight: .semibold)
         #elseif canImport(AppKit)
-        return NSFont.systemFont(ofSize: max(8, NSFont.smallSystemFontSize - 2), weight: .semibold)
+        return NSFont.systemFont(ofSize: GuildAdsBannerLayout.titleFontSize, weight: .semibold)
         #endif
     }
 
@@ -938,6 +947,13 @@ private final class GuildAdsBannerViewModel: ObservableObject {
         .padding()
     }
     .frame(maxWidth: 420)
+}
+
+#Preview("Guild Ads Large Text") {
+    GuildAdsBanner(previewAd: GuildAdsBannerPreviewFixtures.allAds[0], style: .automatic)
+        .dynamicTypeSize(.accessibility5)
+        .padding()
+        .frame(maxWidth: 420)
 }
 
 private enum GuildAdsBannerPreviewFixtures {
