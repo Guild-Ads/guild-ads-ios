@@ -10,7 +10,7 @@ GuildAds is a lightweight ad SDK built for indie apps. No full-screen takeovers,
 
 - **Weekly payouts** tied directly to advertiser spend -- no opaque ad-tech middlemen.
 - **10% bonus credit** on every finalized payment, usable to promote your own apps on the network.
-- **Privacy-first** -- no cross-app tracking. The SDK uses hashed, app-scoped identifiers only.
+- **Privacy-first** -- no cross-app tracking. The SDK uses an app-scoped identifier (the system `identifierForVendor`) only -- never the IDFA -- so a device can't be followed across other developers' apps. See [Privacy](#privacy) for the full data picture.
 - **One ad slot** that stays out of your users' way, so the upgrade path to an ad-free tier stays clean.
 
 ## Requirements
@@ -230,6 +230,35 @@ let fresh = await GuildAds.refreshAd(for: "settings_footer")
 ```
 
 Both methods return `nil` if no ad is available. Impression and click tracking are handled by `GuildAdsBanner` and are not part of the manual load path.
+
+## Privacy
+
+GuildAds is built to be easy to disclose. Here's exactly what the SDK collects and what you, the integrating developer, need to do.
+
+### What the SDK sends
+
+For ad serving and impression/click reporting, the SDK sends to `guildads.com`:
+
+- **`identifierForVendor` (IDFV)** -- an app-scoped device identifier. This is **not** the IDFA, and the SDK never touches `ASIdentifierManager`.
+- **Ad interaction events** -- impressions, ad serves, and clicks, along with the placement IDs you assign.
+- **Coarse device/app context** -- device model, OS version, locale, time zone, and your app's bundle ID / version. These have no dedicated App Store privacy type and don't need to be declared on their own.
+
+The SDK does **not** collect the IDFA, location/GPS, contacts, email, name, or any account identifier. Ads are contextual (by placement), not personalized to the user, and Guild is the sole controller of this data -- it is never shared with data brokers or used to target users in other developers' apps.
+
+### Privacy manifest
+
+The SDK ships a [`PrivacyInfo.xcprivacy`](Sources/GuildAds/PrivacyInfo.xcprivacy) manifest. Xcode automatically folds it into your app's privacy report when you archive (**Product > Archive**, then **Generate Privacy Report**), so Guild's data collection is accounted for without you reverse-engineering it. The SDK uses no [required-reason APIs](https://developer.apple.com/documentation/bundleresources/privacy-manifest-files), so it adds no `NSPrivacyAccessedAPITypes` obligations to your app.
+
+### What you need to do as a publisher
+
+The privacy manifest covers the *manifest* requirement, but the App Store Connect **App Privacy** questionnaire (the nutrition label) is a separate, manual step that the manifest does not auto-fill. In **App Store Connect > your app > App Privacy**, make sure these two data types are declared (add them if your app doesn't already):
+
+| Data type | Linked to user | Used for tracking | Purpose |
+|---|---|---|---|
+| **Identifiers > Device ID** | Yes | **No** | Third-Party Advertising |
+| **Usage Data > Advertising Data** | Yes | **No** | Third-Party Advertising |
+
+That's the whole list. Because none of this is "tracking" under Apple's definition, **you do not need an App Tracking Transparency (ATT) prompt** and you should leave the "Used to track you" toggle off for both types. Nothing else -- no extra Info.plist keys, no `NSUserTrackingUsageDescription`, no changes to your own privacy manifest -- is required.
 
 ## Manage your account from the CLI
 
