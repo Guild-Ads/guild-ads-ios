@@ -16,7 +16,10 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "GuildAds"
+            name: "GuildAds",
+            resources: [
+                .copy("PrivacyInfo.xcprivacy"),
+            ]
         ),
         .testTarget(
             name: "GuildAdsTests",
